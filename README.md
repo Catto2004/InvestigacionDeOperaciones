@@ -1,1 +1,1 @@
-# InvestigacionDeOperaciones
+# Investigacion De Operaciones
