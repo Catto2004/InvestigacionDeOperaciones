@@ -30,6 +30,12 @@ Screen {
     margin: 1;
 }
 
+#MaxMin {
+    margin: 1;
+    width: 3;
+}
+
+
 Button.-error {
     background: red;
     color: white;
