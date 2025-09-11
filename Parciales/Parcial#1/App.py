@@ -2,9 +2,10 @@
 # Codigo Principal
 
 # ############ Importaciones
+from email.header import Header
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Input, Button, Static, Label
+from textual.widgets import Input, Button, Static, Label, Footer, DataTable, Header
 from textual.reactive import reactive
 import os
 
@@ -15,29 +16,32 @@ import tcss
 os.system("cls")
 
 # ############ Aplicación
-class App(App):
+class MetodoGrafico(App):
+    # ################## Declaración De Variables ##################
     CSS = tcss.CSS
+    TITLE = "Investigación de Operaciones: Parcial #1: Metodo Gráfico by JDRB"
+    BINDINGS = [("^q", "quit", "Salir"),  # Cerrar la aplicación
+                ("^r", "reset", "Reset")] # Reiniciar la aplicación
+    
     restricciones = reactive([])
 
     def on_mount(self) -> None:
-        self.title = "Parcial #1: Metodo Gráfico"
-        self.classes= "-light-mode"
+        pass
         #tabla = self.query_one("#TablaRestricciones", DataTable)
         #tabla.add_columns("Restricción")
 
         #ruta = Plotter.generar_grafica()
         #self.img_widget.path = ruta
 
+    async def AppQuit(self):
+        self.exit()
+
     # ################## Interface ##################
     def compose(self) -> ComposeResult:
-        with Vertical():
-            
-            # Barra Superior
-            with Horizontal(id="BarraSuperior"):
-                yield Static("Investigación de Operaciones: Parcial #1: Metodo Gráfico by JDRB", id="Titulo")
-                yield Button("Reset", id="BotonReset")
-                yield Button("X", id="BotonSalir")
+        yield Header()
+        yield Footer()
 
+        with Vertical():
             # Panel Principal
             with Horizontal(id="PanelPrincipal"):
                 # Panel Izquierdo
@@ -64,5 +68,7 @@ class App(App):
             self.exit()
             return
 
+
+# ################## Ejecución ##################
 if __name__ == "__main__":
-    App().run()
+    MetodoGrafico().run()
