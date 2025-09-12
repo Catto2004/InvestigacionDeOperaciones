@@ -2,7 +2,6 @@
 # Codigo Principal
 
 # ############ Importaciones
-from email.header import Header
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Input, Button, Static, Label, Footer, DataTable, Header
@@ -40,6 +39,7 @@ class MetodoGrafico(App):
         yield Footer()
 
         with Horizontal(id="PanelPrincipal"):
+
             # Panel Izquierdo
             with Vertical(id="PanelIzquierdo"):
                 yield Label("Función objetivo:", id="TituloFunObj")
@@ -47,24 +47,19 @@ class MetodoGrafico(App):
                 with Horizontal(id="ControlesFunObj"):
                     yield Button("Max", id="MaxMin")
                     yield Input(placeholder="z = 3x + 4y", id="InputFunObj")
-                yield Label("Restricciones:", id="TituloRestricciones")
-                yield Input(placeholder="Ingrese una restricción...", id="InputRestriccion")
-                yield Static("", id="TablaRestricciones")
 
             # Panel Derecho
             with Vertical(id="PanelDerecho"):
-                yield Static("Gráfica:", id="TituloGrafica")
-                #yield self.img_widget
-                yield Static("Solución:", id="TituloSolucion")
-                yield Static("", id="Solucion")
-
+                yield Label("Restricciones:", id="TituloRestricciones")
+                yield Input(placeholder="Ingrese una restricción...", id="InputRestriccion")
+                yield Static("", id="TablaRestricciones")  
 
     # ################## Manejo de Botones ##################
     def on_button_pressed(self, event: Button.Pressed) -> None:
         boton = event.button
 
         # Cambia entre MAX y MIN    
-        self.Modo = "MIN" if self.Modo == "MAX" else "MAX"
+        self.Modo = "Min" if self.Modo == "Max" else "Max"
         event.button.label = self.Modo
 
     # ################## Eventos ##################
@@ -76,6 +71,8 @@ class MetodoGrafico(App):
                 self.Restricciones.append(NuevaRestriccion)
                 event.input.value = ""  # Limpiar el input
                 self.actualizar_tabla_restricciones()
+                Plotter.DibujarRestricciones(self.Restricciones)
+                Plotter.MostrarGrafica()
 
     def actualizar_tabla_restricciones(self):
         # Actualiza el Static que muestra las restricciones.
