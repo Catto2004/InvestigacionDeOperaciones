@@ -70,11 +70,11 @@ class MetodoGrafico(App):
             if NuevaRestriccion:
                 self.Restricciones.append(NuevaRestriccion)
                 event.input.value = ""  # Limpiar el input
-                self.actualizar_tabla_restricciones()
+                self.ActualizarTablaRestricciones()
                 Plotter.DibujarRestricciones(self.Restricciones)
                 Plotter.MostrarGrafica()
 
-    def actualizar_tabla_restricciones(self):
+    def ActualizarTablaRestricciones(self):
         # Actualiza el Static que muestra las restricciones.
         if self.Restricciones:
             contenido = "\n".join(f"{i+1}. {r}" for i, r in enumerate(self.Restricciones))

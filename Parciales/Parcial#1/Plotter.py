@@ -1,35 +1,65 @@
 # Investigación de Operaciones: Parcial #1: Metodo Gráfico by JDRB
 # Código para graficar las restricciones usando Matplotlib
 # Plotter.py
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.ion()  # Activar modo interactivo globalmente
+import Parser
 
-# Variables globales para la figura y ejes
-FiguraPrincipal, EjePrincipal = plt.subplots()
+fig, ax = plt.subplots()
 
-# ########## Funciones ##########
-def DibujarRestricciones(ListaRestricciones: list[str]) -> None:
-# Recibe una lista de restricciones en formato de texto, y las dibuja en la ventana de Matplotlib.
+# ############ Dibujar Restricciones ############
+def DibujarRestricciones(listaRestricciones):
+    x = np.linspace(0, 20, 400)
+    plt.figure()
 
-    EjePrincipal.cla()  # Limpiar el eje antes de dibujar
+    # Guardamos info para sombrear la región factible
+    restriccionesProcesadas = []
 
-    x = np.linspace(0, 20, 200)
+    for restriccion in listaRestricciones:
+        datos = Parser.ParsearRestriccion(restriccion)
+        a, b, c, operador = datos["a"], datos["b"], datos["c"], datos["operador"]
 
-    for Restriccion in ListaRestricciones:
-        # 🔧 Aquí debes convertir el texto de la restricción a algo que se pueda graficar.
-        # Ejemplo temporal: todas las restricciones serán y = 20 - x
-        y = 20 - x
-        EjePrincipal.plot(x, y, label=Restriccion)
+        if b != 0:
+            y = (c - a * x) / b
+            plt.plot(x, y, label=restriccion)
+            restriccionesProcesadas.append((a, b, c, operador, y))
+        else:
+            # Caso especial: no hay término en y => línea vertical
+            x_linea = np.full_like(x, c / a)
+            plt.plot(x_linea, x, label=restriccion)
+            # Para sombrear: usamos máscara booleana
+            restriccionesProcesadas.append((a, b, c, operador, None))
 
-    EjePrincipal.set_xlim(0, 20)
-    EjePrincipal.set_ylim(0, 20)
-    EjePrincipal.legend()
-    FiguraPrincipal.canvas.draw()  # Refrescar la ventana
+    # Sombreado de la región factible
+    if restriccionesProcesadas:
+        y_max = np.full_like(x, np.inf)
+        y_min = np.full_like(x, -np.inf)
 
-def MostrarGrafica() -> None:
-    """
-    Muestra la ventana de Matplotlib (si no se está mostrando ya).
-    """
-    plt.show(block=False)
+        for a, b, c, operador, y in restriccionesProcesadas:
+            if b != 0:
+                if operador == "<=":
+                    y_max = np.minimum(y_max, y)
+                elif operador == ">=":
+                    y_min = np.maximum(y_min, y)
+            else:
+                # Restricciones verticales: filtramos dominio de x
+                x_valid = x <= c/a if operador == "<=" else x >= c/a
+                y_max = np.where(x_valid, y_max, np.nan)
+                y_min = np.where(x_valid, y_min, np.nan)
+
+        # Sombreado entre y_min y y_max
+        plt.fill_between(x, y_min, y_max, where=(y_max > y_min), color="gray", alpha=0.3)
+
+    plt.xlim(0, 20)
+    plt.ylim(-20, 20)
+    plt.grid()
+    plt.legend()
+    plt.show()
+
+# Ejemplo de uso:
+# DibujarRestricciones(["2x + y <= 20", "x + 3y <= 30", "x >= 0", "y >= 0"])
+# input("Presiona ENTER para cerrar...")  # Mantener la ventana abierta
+# plt.ioff()
+# plt.show()
