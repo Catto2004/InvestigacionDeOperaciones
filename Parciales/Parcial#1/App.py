@@ -47,6 +47,9 @@ class MetodoGrafico(App):
                 with Horizontal(id="ControlesFunObj"):
                     yield Button("Max", id="MaxMin")
                     yield Input(placeholder="z = 3x + 4y", id="InputFunObj")
+                # Static para mostrar la solución
+                yield Label("Solución:", id="TituloSolucion")
+                yield Static("", id="Solucion")    
 
             # Panel Derecho
             with Vertical(id="PanelDerecho"):
