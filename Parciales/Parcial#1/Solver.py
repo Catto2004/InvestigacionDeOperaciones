@@ -27,7 +27,7 @@ def resolverPL(funcionObjetivo: str, listaRestricciones: list, modo: str = "MAX"
             prob += r["a"] * x + r["b"] * y <= r["c"]
         elif r["operador"] == ">=":
             prob += r["a"] * x + r["b"] * y >= r["c"]
-        else:  # operador == "="
+        else: # operador == "="
             prob += r["a"] * x + r["b"] * y == r["c"]
 
     # Resolver

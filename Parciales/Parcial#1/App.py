@@ -23,7 +23,8 @@ class MetodoGrafico(App):
                 ("^r", "reset", "Reset")] # Reiniciar la aplicación
     
     Restricciones = []  # Lista de restricciones
-    Modo = reactive("MAX")  # MAX o MIN
+    Modo = reactive("Max")  # MAX o MIN
+    Resultado = {"Estado": "Esperando", "x": 0, "y": 0, "z": 0}
 
     def on_mount(self) -> None:
         pass
@@ -49,7 +50,10 @@ class MetodoGrafico(App):
                     yield Input(placeholder="z = 3x + 4y", id="InputFunObj")
                 # Static para mostrar la solución
                 yield Label("Solución:", id="TituloSolucion")
-                yield Static("", id="Solucion")    
+                yield Static(f"  Estado: {self.Resultado['Estado']}", id="Solucion")
+                yield Static(f"     x = {self.Resultado['x']:.2f}", id="SolucionX")
+                yield Static(f"     y = {self.Resultado['y']:.2f}", id="SolucionY")
+                yield Static(f"     z = {self.Resultado['z']:.2f}", id="SolucionZ")
 
             # Panel Derecho
             with Vertical(id="PanelDerecho"):
