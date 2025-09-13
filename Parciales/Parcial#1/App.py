@@ -4,11 +4,10 @@
 # ############ Importaciones
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Input, Button, Static, Label, Footer, DataTable, Header
+from textual.widgets import Input, Button, Static, Label, Footer, Header
 from textual.reactive import reactive
 import os
 
-import Solver
 import Plotter
 import tcss
 
@@ -20,19 +19,13 @@ class MetodoGrafico(App):
     CSS = tcss.CSS
     TITLE = "Investigación de Operaciones: Parcial #1: Metodo Gráfico by JDRB"
     BINDINGS = [("^q", "quit", "Salir"),  # Cerrar la aplicación
-                ("^r", "reset", "Reset")] # Reiniciar la aplicación
+                ("^r", "reset", "Reset"), # Reiniciar la aplicación
+                ("^s", "solve", "Resolver")] # Resolver el PL
     
     Restricciones = []  # Lista de restricciones
     Modo = reactive("Max")  # MAX o MIN
+    FuncionObjetivo = reactive("")  # Función objetivo inicial
     Resultado = {"Estado": "Esperando", "x": 0, "y": 0, "z": 0}
-
-    def on_mount(self) -> None:
-        pass
-        #tabla = self.query_one("#TablaRestricciones", DataTable)
-        #tabla.add_columns("Restricción")
-
-        #ruta = Plotter.generar_grafica()
-        #self.img_widget.path = ruta
 
     # ################## Interface ##################
     def compose(self) -> ComposeResult:
@@ -47,7 +40,7 @@ class MetodoGrafico(App):
                 # Controles para la función objetivo
                 with Horizontal(id="ControlesFunObj"):
                     yield Button("Max", id="MaxMin")
-                    yield Input(placeholder="z = 3x + 4y", id="InputFunObj")
+                    yield Input(placeholder="3x + 4y", id="InputFunObj")
                 # Static para mostrar la solución
                 yield Label("Solución:", id="TituloSolucion")
                 yield Static(f"  Estado: {self.Resultado['Estado']}", id="Solucion")
@@ -73,13 +66,24 @@ class MetodoGrafico(App):
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         # Captura cuando el usuario presiona Enter en un input.
         if event.input.id == "InputRestriccion":
-            NuevaRestriccion = event.value.strip()
+            NuevaRestriccion = event.value.strip() # Nueva restricción
+            # Validar y agregar la restricción
+            try:
+                Plotter.ParsearRestriccion(NuevaRestriccion)
+            except ValueError as e: # Si no es válida, mostrar error
+                self.notify(f"⚠ Restricción inválida: {e} debe ser de la forma 'ax + by <= c'", severity="error")
+                return
             if NuevaRestriccion:
                 self.Restricciones.append(NuevaRestriccion)
                 event.input.value = ""  # Limpiar el input
                 self.ActualizarTablaRestricciones()
-                Plotter.DibujarRestricciones(self.Restricciones)
-                Plotter.MostrarGrafica()
+        elif event.input.id == "InputFunObj":
+            self.FuncionObjetivo = event.value.strip()
+            try:
+                Plotter.ParsearRestriccion(event.value.strip() + "<=0")  # Validar función objetivo
+            except ValueError as e:
+                self.notify(f"⚠ Función objetivo inválida: {e} debe ser de la forma 'ax + by'", severity="error")
+                return
 
     def ActualizarTablaRestricciones(self):
         # Actualiza el Static que muestra las restricciones.
@@ -93,10 +97,34 @@ class MetodoGrafico(App):
     async def action_reset(self):
         """Reinicia la lista de restricciones."""
         self.Restricciones = []
-        self.Modo = "MAX"
-        self.actualizar_tabla_restricciones()
+        self.Modo = "Max"
+        self.ActualizarTablaRestricciones()
+        self.query_one("#MaxMin", Button).label = self.Modo
         self.query_one("#InputFunObj", Input).value = ""
-        self.query_one("#Solucion", Static).update("")
+        self.query_one("#Solucion", Static).update("  Estado: Esperando")
+        self.query_one("#SolucionX", Static).update("     x = ")
+        self.query_one("#SolucionY", Static).update("     y = ")
+        self.query_one("#SolucionZ", Static).update("     z = ")
+        self.FuncionObjetivo = ""
+
+    async def action_solve(self):
+        """Genera la gráfica y resuelve el problema al presionar ^s (Ctrl+S)."""
+        if not self.FuncionObjetivo:
+            self.notify("⚠ Debe ingresar una función objetivo primero.", severity="error")
+            return
+        if not self.Restricciones:
+            self.notify("⚠ Debe agregar al menos una restricción.", severity="error")
+            return
+
+        Plotter.DibujarRestricciones(self.FuncionObjetivo, self.Restricciones, modo=self.Modo) 
+        resultado = Plotter.resolverPL(self.FuncionObjetivo, self.Restricciones, modo=self.Modo)
+        if resultado and resultado.get("estado") == "Optimal":
+            self.query_one("#Solucion", Static).update(f"  Estado: {resultado['estado']}")
+            self.query_one("#SolucionX", Static).update(f"     x = {resultado['x']:.2f}")
+            self.query_one("#SolucionY", Static).update(f"     y = {resultado['y']:.2f}")
+            self.query_one("#SolucionZ", Static).update(f"     z = {resultado['z']:.2f}")
+        else:
+            self.notify(f"⚠ No se encontró solución (estado: {resultado.get('estado')})", severity="warning")
 
 # ################## Ejecución ##################
 if __name__ == "__main__":

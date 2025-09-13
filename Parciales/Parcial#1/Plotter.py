@@ -5,57 +5,74 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import Parser
+from Parser import ParsearRestriccion
+from Solver import resolverPL
 
 fig, ax = plt.subplots()
 
 # ############ Dibujar Restricciones ############
-def DibujarRestricciones(listaRestricciones):
-    x = np.linspace(0, 20, 400)
-    plt.figure()
+def DibujarRestricciones(funcionObjetivo: str, listaRestricciones: list, modo: str = "MAX"):
+    """
+    Dibuja todas las restricciones, el área factible y el punto óptimo si existe.
+    """
+    x_vals = np.linspace(0, 20, 400)
+    y_vals = np.linspace(0, 20, 400)
+    X, Y = np.meshgrid(x_vals, y_vals)
 
-    # Guardamos info para sombrear la región factible
-    restriccionesProcesadas = []
+    fig, ax = plt.subplots()
+    mascara = np.ones_like(X, dtype=bool)
 
+    # Dibujar restricciones
     for restriccion in listaRestricciones:
-        datos = Parser.ParsearRestriccion(restriccion)
+        try:
+            datos = ParsearRestriccion(restriccion)
+        except ValueError as e:
+            print(f"⚠ No se pudo interpretar '{restriccion}': {e}")
+            continue
+
         a, b, c, operador = datos["a"], datos["b"], datos["c"], datos["operador"]
 
         if b != 0:
-            y = (c - a * x) / b
-            plt.plot(x, y, label=restriccion)
-            restriccionesProcesadas.append((a, b, c, operador, y))
-        else:
-            # Caso especial: no hay término en y => línea vertical
-            x_linea = np.full_like(x, c / a)
-            plt.plot(x_linea, x, label=restriccion)
-            # Para sombrear: usamos máscara booleana
-            restriccionesProcesadas.append((a, b, c, operador, None))
-
-    # Sombreado de la región factible
-    if restriccionesProcesadas:
-        y_max = np.full_like(x, np.inf)
-        y_min = np.full_like(x, -np.inf)
-
-        for a, b, c, operador, y in restriccionesProcesadas:
-            if b != 0:
-                if operador == "<=":
-                    y_max = np.minimum(y_max, y)
-                elif operador == ">=":
-                    y_min = np.maximum(y_min, y)
+            y_linea = (c - a * x_vals) / b
+            ax.plot(x_vals, y_linea, label=restriccion)
+            if operador == "<=":
+                mascara &= (a * X + b * Y <= c)
+            elif operador == ">=":
+                mascara &= (a * X + b * Y >= c)
             else:
-                # Restricciones verticales: filtramos dominio de x
-                x_valid = x <= c/a if operador == "<=" else x >= c/a
-                y_max = np.where(x_valid, y_max, np.nan)
-                y_min = np.where(x_valid, y_min, np.nan)
+                mascara &= np.isclose(a * X + b * Y, c, atol=1e-3)
+        else:
+            # Línea vertical (no hay y)
+            x_linea = np.full_like(x_vals, c / a)
+            ax.plot(x_linea, x_vals, label=restriccion)
+            if operador == "<=":
+                mascara &= (a * X <= c)
+            elif operador == ">=":
+                mascara &= (a * X >= c)
+            else:
+                mascara &= np.isclose(a * X, c, atol=1e-3)
 
-        # Sombreado entre y_min y y_max
-        plt.fill_between(x, y_min, y_max, where=(y_max > y_min), color="gray", alpha=0.3)
+    # Sombrear región factible
+    ax.contourf(X, Y, mascara, levels=[0.5, 1], colors=["#c2f0c2"], alpha=0.4)
 
-    plt.xlim(0, 20)
-    plt.ylim(-20, 20)
-    plt.grid()
-    plt.legend()
+    # Resolver PL y marcar punto óptimo
+    resultado = resolverPL(funcionObjetivo, listaRestricciones, modo)
+    if resultado["estado"] == "Optimal" and resultado["x"] is not None and resultado["y"] is not None:
+        ax.scatter(resultado["x"], resultado["y"], color="red", s=80, zorder=5, label="Óptimo")
+        ax.annotate(
+            f"z = {resultado['z']:.2f}",
+            (resultado["x"], resultado["y"]),
+            textcoords="offset points",
+            xytext=(5, 5),
+            color="red"
+        )
+    else:
+        print(f"⚠ No se encontró solución óptima. Estado: {resultado['estado']}")
+
+    ax.set_xlim(0, 20)
+    ax.set_ylim(0, 20)
+    ax.grid()
+    ax.legend()
     plt.show()
 
 # Ejemplo de uso:

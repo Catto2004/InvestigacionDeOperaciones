@@ -35,7 +35,6 @@ Screen {
     width: 3;
 }
 
-
 Button.-error {
     background: red;
     color: white;
