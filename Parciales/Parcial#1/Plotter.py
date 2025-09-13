@@ -15,8 +15,8 @@ def DibujarRestricciones(funcionObjetivo: str, listaRestricciones: list, modo: s
     """
     Dibuja todas las restricciones, el área factible y el punto óptimo si existe.
     """
-    x_vals = np.linspace(0, 20, 400)
-    y_vals = np.linspace(0, 20, 400)
+    x_vals = np.linspace(0, 400, 400)
+    y_vals = np.linspace(0, 400, 400)
     X, Y = np.meshgrid(x_vals, y_vals)
 
     fig, ax = plt.subplots()

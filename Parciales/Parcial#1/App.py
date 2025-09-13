@@ -115,7 +115,8 @@ class MetodoGrafico(App):
         if not self.Restricciones:
             self.notify("⚠ Debe agregar al menos una restricción.", severity="error")
             return
-
+        
+        # Dibujar y resolver
         Plotter.DibujarRestricciones(self.FuncionObjetivo, self.Restricciones, modo=self.Modo) 
         resultado = Plotter.resolverPL(self.FuncionObjetivo, self.Restricciones, modo=self.Modo)
         if resultado and resultado.get("estado") == "Optimal":
