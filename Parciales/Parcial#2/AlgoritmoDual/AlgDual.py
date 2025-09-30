@@ -1,5 +1,5 @@
-# Dual/Dual.py
-# Implementación del método Dual para Programación Lineal
+# AlgoritmoDual/AlgDual.py
+# Implementación del Algoritmo Dual para Programación Lineal
 from textual.app import ComposeResult
 from textual.widgets import Header, Footer, Button, Label, Input, Static
 from textual.containers import Vertical, Horizontal
@@ -9,12 +9,12 @@ from textual.screen import Screen
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import DualTCSS
+import AlgDualTCSS
 import MicroModulos
 import EjerciciosDemo
 
-class DualApp(Screen):
-    CSS = DualTCSS.CSS
+class AlgDualApp(Screen):
+    CSS = AlgDualTCSS.CSS
     BINDINGS = [
         ("b", "back", "Volver al menú"),
         ("r", "reset", "Resetear"),
