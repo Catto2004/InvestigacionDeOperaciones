@@ -24,17 +24,17 @@ class MenuPrincipal(App):
         yield Footer()
         with Vertical(id="menu"):
             yield Static("Seleccione el método a utilizar:", id="tituloMenu")
-            yield Button("Método Simplex", id="btnSimplex")
-            yield Button("Método Dual", id="btnDual")
-            yield Button("Algoritmo Dual Simplex", id="btnAlgDual")
+            yield Button("Método Simplex", id="botonSimplex")
+            yield Button("Método Dual", id="botonDual")
+            yield Button("Algoritmo Dual Simplex", id="botonAlgDual")
 
     # Manejo de botones
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btnSimplex":
+        if event.button.id == "botonSimplex":
             self.push_screen(SimplexApp())
-        elif event.button.id == "btnDual":
+        elif event.button.id == "botonDual":
             self.push_screen(DualApp())
-        elif event.button.id == "btnAlgDual":
+        elif event.button.id == "botonAlgDual":
             self.push_screen(AlgDualApp())
 
 # Ejecución de la aplicación
