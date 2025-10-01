@@ -11,4 +11,11 @@ CSS = """
     margin-bottom: 1;
     text-align: center;
 }
+
+#botonSimplex, #botonDual, #botonAlgDual {
+    margin: 1;
+    width: 26;
+    align: center middle;
+}
+
 """
