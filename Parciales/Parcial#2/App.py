@@ -8,9 +8,9 @@ from textual.containers import Vertical
 import AppTCSS
 
 # Importación de los módulos (pantallas)
-from Simplex.Simplex import SimplexApp
-from Dual.Dual import DualApp
-from AlgoritmoDual.AlgDual import AlgDualApp
+from Simplex.Simplex import SimplexApp, SimplexTCSS, SolverSimplex
+from Dual.Dual import DualApp, DualTCSS, SolverDual
+from AlgoritmoDual.AlgDual import AlgDualApp, AlgDualTCSS, SolverAlgDual
 
 # Clase principal del menú
 class MenuPrincipal(App):

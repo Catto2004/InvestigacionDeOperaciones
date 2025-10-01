@@ -122,7 +122,7 @@ class WidgetSolucion(Container):
 
 
 # ############### Widget "Tabla de Iteraciones" 
-class WidgetTablaIteraciones(App):
+class WidgetTablaIteraciones(Container):
     Contenido = reactive([])  # Lista de listas para las filas de la tabla
     Columnas = reactive([])   # Lista de nombres de columnas
 

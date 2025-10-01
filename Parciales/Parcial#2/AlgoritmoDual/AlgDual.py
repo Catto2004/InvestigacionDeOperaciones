@@ -9,7 +9,8 @@ from textual.screen import Screen
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import AlgDualTCSS
+from . import AlgDualTCSS
+from . import SolverAlgDual
 import MicroModulos
 import EjerciciosDemo
 

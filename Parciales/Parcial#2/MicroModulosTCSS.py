@@ -13,4 +13,16 @@ CSS = """
 #WidgetSolucion {
     padding: 1;
 }
+
+#TituloRestricciones {
+    text-style: bold;
+}
+
+#TituloFunObj {
+    text-style: bold;
+}
+
+#TituloSolucion {
+    text-style: bold;
+}
 """
