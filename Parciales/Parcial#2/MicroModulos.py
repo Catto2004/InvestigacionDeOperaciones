@@ -162,5 +162,5 @@ if __name__ == "__main__":
     #WidgetRestricciones().run()
     #WidgetFuncionObjetivo().run()
     #WidgetSolucion().run()
-    WidgetTablaIteraciones().run()
+    #WidgetTablaIteraciones().run()
     pass
