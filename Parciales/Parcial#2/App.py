@@ -1,4 +1,4 @@
-# Investigación de Operaciones: Parcial #1: Metodo Gráfico by JDRB
+# Investigación de Operaciones: Parcial #2: Metodos y Algoritmos de PL by JDRB
 # Codigo Principal
 
 # Menú principal para elegir el método de PL
