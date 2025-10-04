@@ -9,7 +9,9 @@ EjerciciosDemo = [
         "restricciones": [
             "2x1 + x2 <= 18",
             "2x1 + 3x2 <= 42",
-            "3x1 + x2 <= 24"
+            "3x1 + x2 <= 24",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -19,7 +21,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "40x1 + 30x2",
         "restricciones": [
             "2x1 + x2 <= 40",
-            "x1 + x2 <= 30"
+            "x1 + x2 <= 30",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -29,7 +33,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "4x1 + 6x2 + 2x3",
         "restricciones": [
             "2x1 + x2 + x3 <= 50",
-            "x1 + x2 + 2x3 <= 36"
+            "x1 + x2 + 2x3 <= 36",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -40,7 +46,9 @@ EjerciciosDemo = [
         "restricciones": [
             "6x1 + 4x2 <= 24",
             "x1 + 2x2 <= 6",
-            "-x1 + x2 <= 1"
+            "-x1 + x2 <= 1",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -50,7 +58,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "20x1 + 10x2 + 15x3",
         "restricciones": [
             "2x1 + x2 + x3 <= 40",
-            "x1 + 2x2 + 3x3 <= 60"
+            "x1 + 2x2 + 3x3 <= 60",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -60,7 +70,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "2x1 + 3x2",
         "restricciones": [
             "x1 + x2 >= 5",
-            "2x1 + x2 >= 8"
+            "2x1 + x2 >= 8",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -70,7 +82,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "4x1 + 6x2",
         "restricciones": [
             "3x1 + 2x2 >= 12",
-            "x1 + 2x2 >= 8"
+            "x1 + 2x2 >= 8",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -80,7 +94,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "10x1 + 15x2 + 25x3",
         "restricciones": [
             "2x1 + x2 + x3 >= 10",
-            "x1 + 3x2 + 2x3 >= 15"
+            "x1 + 3x2 + 2x3 >= 15",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -90,7 +106,9 @@ EjerciciosDemo = [
         "funcion_objetivo": "7x1 + 9x2",
         "restricciones": [
             "x1 + x2 >= 6",
-            "2x1 + 3x2 >= 12"
+            "2x1 + 3x2 >= 12",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     },
 
@@ -101,7 +119,9 @@ EjerciciosDemo = [
         "restricciones": [
             "2x1 + x2 + x3 >= 20",
             "x1 + x2 + 2x3 >= 25",
-            "3x1 + 2x2 + 2x3 >= 30"
+            "3x1 + 2x2 + 2x3 >= 30",
+            "x1 >= 0",
+            "x2 >= 0"
         ]
     }
 ]

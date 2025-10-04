@@ -12,12 +12,14 @@ import Parser
 class WidgetRestricciones(Container):
     restricciones = reactive([])
 
+    # Composición del widget
     def compose(self):
         with Vertical(id="WidgetRestricciones"):
             yield Label("Restricciones:", id="TituloRestricciones")
             yield Input(placeholder="Ingrese una restricción...", id="InputRestriccion")
             yield Static("(Sin restricciones)", id="TablaRestricciones")
 
+    # Evento al enviar el input
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "InputRestriccion":
             nueva = event.value.strip()
@@ -30,6 +32,7 @@ class WidgetRestricciones(Container):
             event.input.value = ""
             self.ActualizarTabla()
 
+    # Actualiza la tabla de restricciones mostrada  
     def ActualizarTabla(self):
         if self.restricciones:
             contenido = "\n".join(f"{i+1}. {r}" for i, r in enumerate(self.restricciones))
@@ -37,8 +40,15 @@ class WidgetRestricciones(Container):
             contenido = "(Sin restricciones)"
         self.query_one("#TablaRestricciones", Static).update(contenido)
 
+    # Obtener lista de restricciones
     def GetRestricciones(self):
         return self.restricciones
+    
+    # Reiniciar a estado inicial
+    def Reset(self):
+        self.restricciones = []
+        self.query_one("#InputRestriccion", Input).value = ""
+        self.ActualizarTabla()
 
 
 
@@ -73,6 +83,13 @@ class WidgetFuncionObjetivo(Container):
     # Obtener función objetivo y modo
     def GetFuncionObjetivo(self):
         return (self.funcion_objetivo, self.modo)
+    
+    # Reiniciar a estado inicial
+    def Reset(self):
+        self.modo = "Max"
+        self.funcion_objetivo = ""
+        self.query_one("#MaxMin", Button).label = self.modo
+        self.query_one("#InputFunObj", Input).value = ""
 
 
 
@@ -111,7 +128,7 @@ class WidgetSolucion(Container):
         for Var in Variables:
             TablaSolucion.add_row(Var, f"{self.Resultado[Var]:.2f}")
 
-    def ResetSolucion(self):
+    def Reset(self):
         """Reinicia la solución a estado inicial."""
         self.ActualizarSolucion({"Estado": "No resuelto", "Z": 0.0})
 
@@ -147,7 +164,7 @@ class WidgetTablaIteraciones(Container):
         TablaIteraciones = self.query_one("#TablaIteraciones", DataTable)
         TablaIteraciones.add_row(*[str(v) for v in Fila])
 
-    def ResetIteraciones(self):
+    def Reset(self):
         """Reinicia la tabla de iteraciones."""
         self.Contenido = []
         TablaIteraciones = self.query_one("#TablaIteraciones", DataTable)
@@ -156,6 +173,7 @@ class WidgetTablaIteraciones(Container):
     def GetIteraciones(self):
         """Devuelve todas las iteraciones almacenadas."""
         return self.Contenido
+
 
 # Pruebas
 if __name__ == "__main__":
