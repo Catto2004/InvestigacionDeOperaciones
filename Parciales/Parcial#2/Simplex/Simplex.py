@@ -29,7 +29,10 @@ class SimplexApp(Screen):
     ] # atajos de teclado
     TITLE = "Parcial #2 / Algoritmo Simplex" # título de la pantalla
 
+    # ################ Variables del problema ################
     Problema = {"modo": "Max", "funcion_objetivo": "", "restricciones": []} # problema actual
+    Iteraciones = [] # iteraciones del proceso
+    Solucion = {} # solución final
 
 
     # ################ Manejo de la interfaz ################

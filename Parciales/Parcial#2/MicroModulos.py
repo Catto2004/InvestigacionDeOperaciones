@@ -22,7 +22,9 @@ class WidgetRestricciones(Container):
     """
 
     # Lista reactiva de restricciones
-    Restricciones = reactive([])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.Restricciones = []
 
     # Composición del widget
     def compose(self):

@@ -5,62 +5,74 @@ import re
 def Parsear(expresion: str) -> dict:
     """
     Parsea una restricción o función objetivo con hasta 10 variables.
-    Soporta variables:
-      - Con índice: x1, x2, ..., x10
-      - Sin índice: x, y, z (equivale a x1, x2, x3)
-
-    Ejemplos válidos:
-      "3x + 2y <= 10"
-      "-x + 4z = 7"
-      "5x2 - x10 >= 20"
+    Acepta variables x1..x10 o letras sin índice (x, y, z).
     """
 
-    # 1. Buscar operador de restricción
+    # --- 1. Normalización de entrada ---
+    if isinstance(expresion, (list, tuple)):
+        # Si por error viene como lista (["x1 + x2 <= 10"]), la convertimos
+        expresion = " ".join(map(str, expresion))
+    if not isinstance(expresion, str):
+        raise ValueError(f"Tipo inválido de expresión ({type(expresion).__name__}), se esperaba str.")
+    
+    expresion = expresion.strip().lower()
+    if not expresion:
+        raise ValueError("La expresión está vacía.")
+
+    # --- 2. Buscar operador (<=, >=, =) ---
     match = re.search(r"(<=|>=|=)", expresion)
     if not match:
         raise ValueError("Expresión inválida, falta operador (<=, >=, =).")
 
     operador = match.group(1)
-    izquierda, derecha = expresion.split(operador)
-    izquierda = izquierda.strip()
-    derecha = derecha.strip()
+    partes = expresion.split(operador)
+    if len(partes) != 2:
+        raise ValueError("Expresión mal formada, no se pudo dividir correctamente en lados izquierdo y derecho.")
+    
+    izquierda, derecha = [p.strip() for p in partes]
 
-    # 2. Inicializar coeficientes en 0
+    # --- 3. Inicializar coeficientes ---
     coef = [0.0] * 10
 
-    # 3. Regex para términos tipo [+/-]coef * variable
-    #    Soporta: 3x1, -2y, +z, x, etc.
+    # --- 4. Buscar términos ---
+    # Acepta cosas como: 3x, -x2, +4y3, etc.
     terminos = re.finditer(r"([+-]?\s*\d*)([a-zA-Z]\d*?)", izquierda)
-
-    # Mapeo de letras simples → índices
     mapa_vars = {"x": 0, "y": 1, "z": 2}
 
+    encontrados = False
     for t in terminos:
+        encontrados = True
         coef_str = t.group(1).replace(" ", "")
         var_str = t.group(2)
 
-        # Determinar índice de la variable
-        if var_str in mapa_vars:  # Caso x, y, z
+        # --- índice de variable ---
+        if var_str in mapa_vars:
             idx = mapa_vars[var_str]
-        elif var_str.startswith("x") and var_str[1:].isdigit():  # Caso x1..x10
+        elif var_str[0].isalpha() and var_str[1:].isdigit():
             idx = int(var_str[1:]) - 1
         else:
             raise ValueError(f"Variable no reconocida: {var_str}")
 
-        if idx < 0 or idx >= 10:
+        if not (0 <= idx < 10):
             raise ValueError(f"Variable fuera de rango: {var_str}")
 
-        # Determinar coeficiente
+        # --- coeficiente ---
         if coef_str in ["", "+"]:
             valor = 1.0
         elif coef_str == "-":
             valor = -1.0
         else:
-            valor = float(coef_str)
+            try:
+                valor = float(coef_str)
+            except ValueError:
+                raise ValueError(f"Coeficiente inválido en término: '{coef_str}{var_str}'")
 
         coef[idx] += valor
 
-    # 4. Constante del lado derecho
+    if not encontrados:
+        raise ValueError("No se detectaron variables válidas en la expresión.")
+
+    # --- 5. Constante derecha ---
     try:
         constante = float(derecha)
     except ValueError:
