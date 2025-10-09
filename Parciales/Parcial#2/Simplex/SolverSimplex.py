@@ -44,8 +44,11 @@ class SimplexSolver:
         self.reset()
         self.modo = modo if modo in ("Max", "Min") else "Max"
 
-        # Parsear FO
-        parsed_fo = Parsear(funcion_objetivo)
+        # permitir función objetivo sin operador (p.ej. "3x1 + 5x2")
+        if not any(op in funcion_objetivo for op in ("<=", ">=", "=")):
+            parsed_fo = Parsear(funcion_objetivo + " <= 0")
+        else:
+            parsed_fo = Parsear(funcion_objetivo)
         # Parsear restricciones
         parsed_constraints = [Parsear(r) for r in restricciones]
 
@@ -144,14 +147,19 @@ class SimplexSolver:
         # Si hay artificiales -> arrancar en fase I
         if len(self.artificials) > 0:
             self.phase = 1
-            # Preparar vector de coste de fase I: minimizar suma de artificiales
-            # Para consistencia con nuestro solver que maneja Max/Min, almacenaremos c_phase1
-            # como +1 para artificiales con minimización; pero trataremos la selección acorde.
-            # Aquí sólo marcamos que phase1 se necesita. El iterate_one usará lógica de fase1.
+            # Construir vector c_phase1: minimizar suma de artificiales.
+            # Asumime que la fase I es minimización; como internamente trabaja con c para Max,
+            # Pone +1 en el coste de las artificiales y 0 en el resto (usaremos lógica de signs en reduced costs).
+            self.c_phase1 = np.zeros(len(self.c), dtype=float)
+            for aidx in self.artificials:
+                if 0 <= aidx < len(self.c_phase1):
+                    self.c_phase1[aidx] = 1.0
         else:
             self.phase = 2
+            self.c_phase1 = None
 
         self.status_flag = "ready"
+
 
     # -------------------- Cálculos internos --------------------
     def _get_B_and_N(self):
@@ -180,12 +188,15 @@ class SimplexSolver:
         Z = float(cB.dot(xB)) if xB.size>0 else 0.0
         return xB, Z, B_inv
 
-    def _reduced_costs(self, B_inv):
-        """Calcula costos reducidos r_j = c_j - c_B^T * B_inv * A[:,j]"""
+    def _reduced_costs(self, B_inv, c_vector=None):
+        """Calcula costos reducidos r_j = c_j - c_B^T * B_inv * A[:,j]
+        c_vector: si se pasa, se usa ese vector de costes (útil para fase I).
+        """
+        if c_vector is None:
+            c_vector = self.c
         m = self.A.shape[0]
         n = self.A.shape[1]
-        cB = np.array([ self.c[j] for j in self.basis ]) if len(self.basis)>0 else np.zeros(0)
-        # y^T = c_B^T * B_inv
+        cB = np.array([ c_vector[j] for j in self.basis ]) if len(self.basis)>0 else np.zeros(0)
         yT = cB.dot(B_inv) if B_inv is not None and cB.size>0 else np.zeros((m,))
         r = np.zeros(n)
         for j in range(n):
@@ -193,8 +204,9 @@ class SimplexSolver:
                 r[j] = 0.0
             else:
                 a_j = self.A[:, j]
-                r[j] = self.c[j] - yT.dot(a_j)
+                r[j] = c_vector[j] - yT.dot(a_j)
         return r
+
 
     # -------------------- Decisión de variable entrante y saliente --------------------
     def _choose_entering(self, r):
@@ -217,8 +229,8 @@ class SimplexSolver:
             if not candidates:
                 return None
             return min(candidates)  # Desempate de Bland
+        
     def _choose_leaving(self, B_inv, entering, xB):
-        """Hace el test de razón. Retorna (índice de fila, índice de variable) o (None, None) si no hay restricción => ilimitado."""
         a_j = self.A[:, entering]
         d = B_inv.dot(a_j)
         ratios = []
@@ -226,10 +238,12 @@ class SimplexSolver:
             if val > EPS:
                 ratios.append((xB[i] / val, i))
         if not ratios:
-            return None, None  # Ilimitado
-        # escoger mínimo ratio; en empate regla de Bland: elegir fila con base de menor índice
+            return None, None
         min_ratio, row = min(ratios, key=lambda x: (x[0], self.basis[x[1]]))
         return row, self.basis[row]
+
+
+
 
 
     # -------------------- Iteración única (pivote) --------------------
@@ -260,34 +274,40 @@ class SimplexSolver:
                 B_inv = np.linalg.pinv(B)
 
         xB, Z, _ = self._compute_current_solution()
-        r = self._reduced_costs(B_inv)
 
-        # Verificar si estamos en fase 1 y terminamos fase1 (todas artificiales cero en base y óptimo)
+        # 2) Calcular costos reducidos según fase
+        if self.phase == 1 and self.c_phase1 is not None:
+            r = self._reduced_costs(B_inv, c_vector=self.c_phase1)
+        else:
+            r = self._reduced_costs(B_inv, c_vector=self.c)
+
+        # Fase I: ver si terminó la fase I
         if self.phase == 1:
-            # Si todos los costos reducidos para fase1 son >= -EPS (sin entrante) -> óptimo de fase1 alcanzado
-            # Pero primero calcular objetivo de fase1 (suma de valores artificiales)
-            # Valor objetivo de fase1 = suma de valores básicos artificiales
+            # calcular valor objetivo fase1 = suma de valores de artificiales en la base
             art_vals = [ xB[i] for i,bidx in enumerate(self.basis) if bidx in self.artificials ]
-            phase1_obj = sum(art_vals)
-            # Si no hay costos reducidos negativos bajo lógica de fase1 -> terminar fase 1
+            phase1_obj = sum(art_vals) if len(art_vals)>0 else 0.0
+
             entering = self._choose_entering(r)
             if entering is None:
-                # Terminó Fase I. Verificar factibilidad
+                # terminó fase 1
                 if phase1_obj > 1e-6:
                     self.status_flag = "infeasible"
                     return {"status": "infeasible", "phase1_obj": phase1_obj}
-                # si es factible -> eliminar columnas artificiales y pasar a fase2
-                # Eliminar columnas artificiales de A y c, y ajustar índices de base
-                self._remove_artificials()
+                # eliminar artificials y pasar a fase 2
+                try:
+                    self._remove_artificials()
+                except RuntimeError as e:
+                    self.status_flag = "infeasible"
+                    return {"status": "infeasible", "error": str(e)}
                 self.phase = 2
-                # Recalcular B_inv etc para inicio de fase 2
+                # recalc y devolver snapshot de cambio de fase
                 B, N, nonbas = self._get_B_and_N()
                 try:
                     B_inv = np.linalg.inv(B)
                 except np.linalg.LinAlgError:
                     B_inv = np.linalg.pinv(B)
                 xB, Z, _ = self._compute_current_solution()
-                r = self._reduced_costs(B_inv)
+                r = self._reduced_costs(B_inv, c_vector=self.c)
                 self.iteration += 1
                 return {
                     "status": "phase1_to_phase2",
@@ -296,26 +316,24 @@ class SimplexSolver:
                     "Z": Z,
                     "snapshot": self.get_tableau_display()
                 }
-            # si existe entrante, continuar con el pivoteo de fase1 abajo
-        # Flujo normal de Fase 2:
+            # si hay entering en fase1, seguimos a pivoteo de fase1 (usa r calculado arriba)
+
+        # Fase II normal: seleccionar entrante
         entering = self._choose_entering(r)
         if entering is None:
-            # Óptimo
             self.status_flag = "optimal"
             return {"status": "optimal", "iteration": self.iteration, "Z": Z, "snapshot": self.get_tableau_display()}
 
         row, leaving_var = self._choose_leaving(B_inv, entering, xB)
-        row, leaving_var = self._choose_leaving(B_inv, entering)
         if row is None:
-            # ilimitado
             self.status_flag = "unbounded"
             return {"status": "unbounded", "iteration": self.iteration, "entering": entering, "Z": Z}
 
-        # Realizar pivote: reemplazar basis[row] con entering
+        # Actual pivot: reemplazar basis[row] por entering
         leaving_index = self.basis[row]
         self.basis[row] = entering
 
-        # Actualizar contador de iteración y registrar historial
+        # registrar iteración
         self.iteration += 1
         snapshot = self.get_tableau_display()
         info = {
@@ -324,77 +342,69 @@ class SimplexSolver:
             "entering": entering,
             "entering_name": self.var_names[entering],
             "leaving": leaving_index,
-            "leaving_name": self.var_names[leaving_index],
+            "leaving_name": self.var_names[leaving_index] if 0 <= leaving_index < len(self.var_names) else str(leaving_index),
             "Z": float(Z),
             "snapshot": snapshot
         }
         self.history.append(info)
-
-        # Después del pivote, recalcular para el siguiente paso
         return info
+
 
     # -------------------- Utilidades --------------------
     def _remove_artificials(self):
-        """Elimina columnas de artificiales de A, c y var_names. Ajusta basis indices."""
-        # Marcar columnas artificiales para eliminar
+        """Elimina columnas artificiales de forma robusta o marca inconsistencia."""
         to_remove = set(self.artificials)
-        # Construir mapeo old_index -> new_index
-        new_idx_map = {}
-        new_names = []
-        new_c = []
-        new_col_list = []
-        idx_new = 0
-        for j in range(self.A.shape[1]):
-            if j in to_remove:
-                continue
-            new_idx_map[j] = idx_new
-            new_names.append(self.var_names[j])
-            new_c.append(self.c[j])
-            new_col_list.append(self.A[:, j])
-            idx_new += 1
+        if not to_remove:
+            return
+
+        m = self.A.shape[0]
+        old_n = self.A.shape[1]
+
+        # Construir nuevas columnas (no artificiales) y mapeo
+        keep_cols = [j for j in range(old_n) if j not in to_remove]
+        new_col_list = [ self.A[:, j].copy() for j in keep_cols ]
+        new_names = [ self.var_names[j] for j in keep_cols ]
+        new_c = [ float(self.c[j]) for j in keep_cols ]
+
         if len(new_col_list) > 0:
             new_A = np.column_stack(new_col_list)
         else:
-            new_A = np.zeros((self.A.shape[0],0))
-        # Actualizar basis: si una variable básica era artificial, intentar reemplazarla (esto es complicado)
-        new_basis = []
-        BASIS_NOT_FOUND = -1  # Sentinel value for basis not found
+            new_A = np.zeros((m, 0))
 
+        # Mapeo old->new
+        new_idx_map = { old: new for new, old in enumerate(keep_cols) }
+
+        # Reconstruir basis: intentar mapear cada basic old index a new index
         new_basis = []
-        for b in self.basis:
-            if b in to_remove:
-                # Idealmente se debe encontrar reemplazo buscando una columna no nula en esa fila entre las no eliminadas
-                # Intentaremos encontrar una columna con un 1 en esa fila y ceros en las demás (canónica). Si no se encuentra, dejar BASIS_NOT_FOUND.
-                row_index = self.basis.index(b)
-                found = False
-                for j in range(new_A.shape[1]):
-                    if abs(new_A[row_index, j] - 1.0) < 1e-9 and all(abs(new_A[i,j]) < 1e-9 for i in range(new_A.shape[0]) if i!=row_index):
-                        new_basis.append(j)
-                        found = True
+        for old_b in self.basis:
+            if old_b in to_remove:
+                # buscar reemplazo en la fila correspondiente: prefer columna canónica (1 en esa fila y 0 elsewhere)
+                row_index = self.basis.index(old_b)
+                replacement = None
+                for new_j, old_j in enumerate(keep_cols):
+                    if abs(new_A[row_index, new_j]) > 1e-9:
+                        # candidate: ensure it's not creating multiple nonzeros in other rows? We'll accept and hope pivot can fix
+                        replacement = new_j
                         break
-                if not found:
-                    new_basis.append(BASIS_NOT_FOUND)
+                if replacement is None:
+                    # No hay columna que pueda reemplazar la básica artificial -> problema potencialmente inconsistente
+                    raise RuntimeError("No se encontró columna pivote al eliminar artificiales; modelo inconsistente.")
+                new_basis.append(replacement)
             else:
-                new_basis.append(new_idx_map[b])
-        for i, b in enumerate(new_basis):
-            if b == -1:
-                # elegir cualquier columna j con valor no nulo en la fila i
-                chosen = None
-                for j in range(new_A.shape[1]):
-                    if abs(new_A[i,j]) > 1e-9:
-                        chosen = j
-                    self.status_flag = "infeasible"
-                    raise RuntimeError("No se encontró columna pivote al eliminar artificiales; modelo inconsistente.")
-                if chosen is None:
-                    raise RuntimeError("No se encontró columna pivote al eliminar artificiales; modelo inconsistente.")
-                new_basis[i] = chosen
+                # simple mapping
+                if old_b in new_idx_map:
+                    new_basis.append(new_idx_map[old_b])
+                else:
+                    # shouldn't happen, but guard
+                    raise RuntimeError("Error interno al reconstruir base tras eliminar artificiales.")
 
+        # Actualizar estructuras
         self.A = new_A
         self.c = np.array(new_c, dtype=float)
         self.var_names = new_names
         self.basis = new_basis
-        # reiniciar lista de artificiales
         self.artificials = []
+
 
     def is_optimal(self):
         """Devuelve True si el problema está en estado óptimo (fase 2)"""

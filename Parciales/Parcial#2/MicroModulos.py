@@ -6,6 +6,8 @@ from textual.containers import Horizontal, Vertical, Container
 from textual.widgets import Input, Button, Static, Label, DataTable
 from textual.reactive import reactive
 
+from rich.text import Text
+
 import Parser
 
 # ############### Widget "Restricciones"
@@ -183,51 +185,56 @@ class WidgetSolucion(Container):
 
 
 # ############### Widget "Tabla de Iteraciones" 
-class WidgetTablaIteraciones(Container):
-    """Widget para mostrar la tabla de iteraciones del Simplex."""
+class WidgetTablaIteraciones(Static):
+    """Muestra las iteraciones del método simplex en formato tabular."""
 
-    """-> ¿Cómo funciona?
-    - ConfigurarColumnas(lista_de_nombres): define las columnas de la tabla.
-    - AgregarIteracion(fila): agrega una fila de datos (lista) a la tabla.
-    - Reset(): limpia todas las iteraciones.
-    - GetIteraciones(): devuelve todas las iteraciones como lista de listas.
-    """
-
-    NoIteraciones = reactive(0)  # Número de iteraciones realizadas
-    Contenido = reactive([])  # Lista de listas para las filas de la tabla
-    Columnas = reactive([])   # Lista de nombres de columnas
-
-    # Composición del widget
     def compose(self):
-        with Vertical(id="WidgetTablaIteraciones"):
-            yield Label("Iteraciones:", id="TituloIteraciones")
-            TablaIteraciones = DataTable(id="TablaIteraciones")
-            yield TablaIteraciones
+        yield Static("Sin iteraciones aún.", id="TablaIteraciones")
 
-    # Configura las columnas de la tabla
-    def ConfigurarColumnas(self, Columnas: list):
-        self.Columnas = Columnas
-        TablaIteraciones = self.query_one("#TablaIteraciones", DataTable) # obtener el widget
-        TablaIteraciones.clear(columns=True) # limpiar columnas existentes
-        TablaIteraciones.add_columns(*self.Columnas) # agregar nuevas columnas
+    def ActualizarIteracion(self, snapshot: dict, iteracion: int, fase: int, z_valor: float):
+        """Recibe snapshot del solver y muestra tabla formateada."""
+        if not snapshot:
+            self.query_one("#TablaIteraciones", Static).update("❌ No hay datos de iteración.")
+            return
 
-    # Agrega una fila de iteración (debe coincidir con el número de columnas).
-    def AgregarIteracion(self, Fila: list):
-        if len(Fila) != len(self.Columnas): # validar longitud
-            raise ValueError("La fila no coincide con el número de columnas.") # error
-        self.Contenido.append(Fila) # agregar a contenido   
-        TablaIteraciones = self.query_one("#TablaIteraciones", DataTable) # obtener el widget
-        TablaIteraciones.add_row(*[str(v) for v in Fila]) # agregar fila a la tabla
-        self.NoIteraciones += 1 # incrementar contador de iteraciones
+        nombres = snapshot["var_names"] + ["RHS"]
+        filas = snapshot["rows"]
+        z_row = snapshot["z_row"]
 
-    # Reinicia la tabla de iteraciones
+        # Encabezado
+        lineas = []
+        lineas.append(f"────────────────────────────────────────────")
+        lineas.append(f" Iteración {iteracion}   (Fase {fase})")
+        lineas.append(f"────────────────────────────────────────────")
+        lineas.append(" | ".join(f"{h:>6}" for h in ["Base"] + nombres))
+        lineas.append("-" * (8 * (len(nombres) + 1)))
+
+        # Filas del tableau
+        for f in filas:
+            row = [f"{f['base_name']:>6}"]
+            for v in f["coeffs"]:
+                row.append(f"{v:>6.3f}")
+            row.append(f"{f['rhs']:>6.3f}")
+            lineas.append(" | ".join(row))
+
+        # Fila Z
+        lineas.append("-" * (8 * (len(nombres) + 1)))
+        z_fila = [f"{z_row['base_name']:>6}"]
+        for v in z_row["coeffs"]:
+            z_fila.append(f"{v:>6.3f}")
+        z_fila.append(f"{z_row['rhs']:>6.3f}")
+        lineas.append(" | ".join(z_fila))
+
+        texto = "\n".join(lineas)
+
+        # Mostrar en pantalla
+        self.query_one("#TablaIteraciones", Static).update(Text(texto))
+
     def Reset(self):
-        self.Contenido = []
-        TablaIteraciones = self.query_one("#TablaIteraciones", DataTable)
-        TablaIteraciones.clear()
-        self.NoIteraciones = 0
+        self.query_one("#TablaIteraciones", Static).update("Sin iteraciones aún.")
 
-    # Devuelve todas las iteraciones almacenadas
-    def GetIteraciones(self):
-        return self.Contenido
+    def GetIteracion(self):
+        """Devuelve el estado actual como dict (por si se necesita)."""
+        return self.query_one("#TablaIteraciones", Static).renderable
+    
 

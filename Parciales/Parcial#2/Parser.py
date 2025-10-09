@@ -5,74 +5,69 @@ import re
 def Parsear(expresion: str) -> dict:
     """
     Parsea una restricción o función objetivo con hasta 10 variables.
-    Acepta variables x1..x10 o letras sin índice (x, y, z).
+    Soporta:
+      - Coeficientes con o sin asterisco (3x1, 3*x1)
+      - Variables con o sin índice (x, y, z, x1, x2, etc.)
+      - Letras mayúsculas o minúsculas
     """
-
-    # --- 1. Normalización de entrada ---
-    if isinstance(expresion, (list, tuple)):
-        # Si por error viene como lista (["x1 + x2 <= 10"]), la convertimos
-        expresion = " ".join(map(str, expresion))
-    if not isinstance(expresion, str):
-        raise ValueError(f"Tipo inválido de expresión ({type(expresion).__name__}), se esperaba str.")
-    
-    expresion = expresion.strip().lower()
-    if not expresion:
+    if not expresion or not expresion.strip():
         raise ValueError("La expresión está vacía.")
 
-    # --- 2. Buscar operador (<=, >=, =) ---
+    expresion = expresion.strip()
+
+    # 1️⃣ Buscar operador de restricción (<=, >= o =)
     match = re.search(r"(<=|>=|=)", expresion)
     if not match:
-        raise ValueError("Expresión inválida, falta operador (<=, >=, =).")
+        # Si no hay operador, asumimos <= 0 (para funciones objetivo)
+        expresion += " <= 0"
+        match = re.search(r"(<=|>=|=)", expresion)
 
     operador = match.group(1)
-    partes = expresion.split(operador)
-    if len(partes) != 2:
-        raise ValueError("Expresión mal formada, no se pudo dividir correctamente en lados izquierdo y derecho.")
-    
-    izquierda, derecha = [p.strip() for p in partes]
+    izquierda, derecha = expresion.split(operador)
+    izquierda = izquierda.strip()
+    derecha = derecha.strip()
 
-    # --- 3. Inicializar coeficientes ---
+    # 2️⃣ Inicializar coeficientes
     coef = [0.0] * 10
 
-    # --- 4. Buscar términos ---
-    # Acepta cosas como: 3x, -x2, +4y3, etc.
-    terminos = re.finditer(r"([+-]?\s*\d*)([a-zA-Z]\d*?)", izquierda)
+    # 3️⃣ Buscar términos (ahora también soporta "*", mayúsculas y espacios)
+    terminos = re.finditer(r"([+-]?\s*\d*\.?\d*)\s*\*?\s*([a-zA-Z]\d*)", izquierda)
+
     mapa_vars = {"x": 0, "y": 1, "z": 2}
 
-    encontrados = False
-    for t in terminos:
-        encontrados = True
-        coef_str = t.group(1).replace(" ", "")
-        var_str = t.group(2)
+    variables_encontradas = 0
 
-        # --- índice de variable ---
+    for t in terminos:
+        coef_str = t.group(1).replace(" ", "")
+        var_str = t.group(2).lower()
+
+        # Determinar índice
         if var_str in mapa_vars:
             idx = mapa_vars[var_str]
-        elif var_str[0].isalpha() and var_str[1:].isdigit():
+        elif var_str.startswith("x") and var_str[1:].isdigit():
             idx = int(var_str[1:]) - 1
         else:
             raise ValueError(f"Variable no reconocida: {var_str}")
 
-        if not (0 <= idx < 10):
+        if idx < 0 or idx >= 10:
             raise ValueError(f"Variable fuera de rango: {var_str}")
 
-        # --- coeficiente ---
+        # Determinar coeficiente
         if coef_str in ["", "+"]:
             valor = 1.0
         elif coef_str == "-":
             valor = -1.0
         else:
-            try:
-                valor = float(coef_str)
-            except ValueError:
-                raise ValueError(f"Coeficiente inválido en término: '{coef_str}{var_str}'")
+            valor = float(coef_str)
 
         coef[idx] += valor
+        variables_encontradas += 1
 
-    if not encontrados:
-        raise ValueError("No se detectaron variables válidas en la expresión.")
+    # 🚨 Verificar que haya al menos una variable
+    if variables_encontradas == 0:
+        raise ValueError("No se detectaron variables en la entrada.")
 
-    # --- 5. Constante derecha ---
+    # 4️⃣ Constante del lado derecho
     try:
         constante = float(derecha)
     except ValueError:
@@ -81,5 +76,6 @@ def Parsear(expresion: str) -> dict:
     return {
         "coef": coef,
         "operador": operador,
-        "constante": constante
+        "constante": constante,
+        "max_var": max(i for i, c in enumerate(coef) if c != 0) if variables_encontradas > 0 else 0
     }
