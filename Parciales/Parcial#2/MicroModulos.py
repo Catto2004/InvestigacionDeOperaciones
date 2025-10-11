@@ -101,7 +101,7 @@ class WidgetFuncionObjetivo(Container):
             yield Label("Función objetivo:", id="TituloFunObj")
             with Horizontal(id="ControlesFunObj"):
                 yield Button(self.modo, id="MaxMin")
-                yield Input(placeholder="3x1 + 4x2 + 3x3", id="InputFunObj")
+                yield Input(placeholder="3x1 + 4x2 (Enter para confirmar)", id="InputFunObj")
 
     # Manejo de botones
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -244,6 +244,3 @@ class Documentacion(Container):
 
     def compose(self):
         pass
-
-    def Reset(self):
-        pass  # No hay estado que reiniciar en este widget

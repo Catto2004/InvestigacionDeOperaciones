@@ -12,7 +12,7 @@ CSS = """
     text-align: center;
 }
 
-#botonSimplex, #botonDual, #botonAlgDual {
+#botonSimplex, #botonDual, #botonAlgDual, #botonDoc {
     margin: 1;
     width: 26;
     align: center middle;
