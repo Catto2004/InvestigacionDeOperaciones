@@ -11,11 +11,11 @@ class SimplexSolver:
     """
     Solver interactivo paso-a-paso.
     Uso:
-        solver = SimplexSolver()
-        solver.initialize(modo, funcion_objetivo_str, restricciones_list)
-        while not solver.is_optimal():
-            info = solver.iterate_one()
-            # info contiene meta de la iteración y snapshot para mostrar
+        <p>solver = SimplexSolver()<br/>
+        solver.initialize(modo, funcion_objetivo_str, restricciones_list)<br/>
+        while not solver.is_optimal():<br/>
+            info = solver.iterate_one()<br/>
+            # info contiene meta de la iteración y snapshot para mostrar<p/>
     """
 
     def __init__(self):
@@ -35,7 +35,8 @@ class SimplexSolver:
         self.status_flag = "initialized"  # "ok","optimal","unbounded","infeasible"
         self.history = []       # lista de dicts con cada iteración
 
-    # -------------------- Inicialización y construcción del modelo --------------------
+
+    # ################ Inicialización y construcción del modelo ################
     def initialize(self, modo: str, funcion_objetivo: str, restricciones: list[str]):
         """
         Recibe: modo ("Max" o "Min"), funcion_objetivo como string, lista de restricciones string.
@@ -161,7 +162,7 @@ class SimplexSolver:
         self.status_flag = "ready"
 
 
-    # -------------------- Cálculos internos --------------------
+    # ################ Cálculos internos ################
     def _get_B_and_N(self):
         """Retorna B (m x m), N (m x n_no_básicas), índices no básicas."""
         m = self.A.shape[0]
@@ -208,7 +209,7 @@ class SimplexSolver:
         return r
 
 
-    # -------------------- Decisión de variable entrante y saliente --------------------
+    # ################ Decisión de variable entrante y saliente ################
     def _choose_entering(self, r):
         """Devuelve índice de variable entrante o None si óptimo.
            - Si self.phase == 1: objetivo es MINIMIZAR suma de artificiales -> elegir r_j < -EPS (para minim)
@@ -243,10 +244,7 @@ class SimplexSolver:
         return row, self.basis[row]
 
 
-
-
-
-    # -------------------- Iteración única (pivote) --------------------
+    # ################ Iteración única (pivote) ################
     def iterate_one(self):
         """
         Ejecuta un paso de simplex (una pivotación).
@@ -350,7 +348,7 @@ class SimplexSolver:
         return info
 
 
-    # -------------------- Utilidades --------------------
+    # ################ Utilidades ################
     def _remove_artificials(self):
         """Elimina columnas artificiales de forma robusta o marca inconsistencia."""
         to_remove = set(self.artificials)
@@ -406,6 +404,7 @@ class SimplexSolver:
         self.artificials = []
 
 
+    # ################ Estado y solución ################
     def is_optimal(self):
         """Devuelve True si el problema está en estado óptimo (fase 2)"""
         if self.status_flag == "optimal":
@@ -443,8 +442,10 @@ class SimplexSolver:
         except np.linalg.LinAlgError:
             B_inv = np.linalg.pinv(B)
         xB, Z, _ = self._compute_current_solution()
+
         # coeficientes completos del tableau para mostrar: B_inv * A da los coeficientes actuales de las básicas en términos de las no básicas
         tableau_rows = []
+
         # Construir representación de la matriz completa de coeficientes: variables básicas actuales expresadas en términos de todas las variables
         # En vez de eso, produciremos fila: BaseName, coeficientes para todas las variables (A_effective), RHS
         # Calcular vector de solución actual x_full como ceros excepto básicas
@@ -455,6 +456,7 @@ class SimplexSolver:
         for i in range(m):
             base_idx = self.basis[i]
             row_coeffs = []
+
             # Representación actual de la fila básica (B_inv * A) fila i
             # calcular row_i = e_i^T * B_inv * A  => (B_inv[i,:].dot(A))
             row_i = B_inv[i,:].dot(self.A) if B_inv.size>0 else np.zeros(n)

@@ -4,7 +4,7 @@ import re
 import numpy as np
 
 
-# ---------- PARSER ----------
+# ################ Parser Interno ################
 def Parsear(expresion: str) -> dict:
     """
     Parsea una restricción o función objetivo con hasta 10 variables.
@@ -60,7 +60,7 @@ def Parsear(expresion: str) -> dict:
     return {"coef": coef, "operador": operador, "constante": constante, "max_var": max_idx}
 
 
-# ---------- FORMATO ----------
+# ################ Formato ################
 def fmt_num(x):
     if abs(x - round(x)) < 1e-12:
         return str(int(round(x)))
@@ -87,11 +87,12 @@ def format_linear_combination(coeffs, var_prefix="y"):
     return s
 
 
-# ---------- CONVERSOR ----------
+# ################ Conversor ################
 class DualConversor:
 
     def primal_to_dual(self, c, A, b, tipos, tipo_primal="MAX"):
-        """Convierte un PL primal a su dual."""
+        """Conversión de PL Primal a Dual"""
+
         A = np.array(A, dtype=float) if len(A) > 0 else np.zeros((0, len(c)), dtype=float)
         c = np.array(c, dtype=float)
         b = np.array(b, dtype=float)
@@ -135,7 +136,7 @@ class DualConversor:
 
         return tipo_dual, fo, restricciones, condiciones
 
-    # ---------- INTERFAZ PRINCIPAL ----------
+    # ################ Ejecucion ################
     def Convertir(self, fo_primal: str, restricciones: list[str], tipo_primal="MAX") -> dict:
         """
         Convierte un problema primal a dual.
@@ -143,6 +144,7 @@ class DualConversor:
         restricciones: lista de strings (ej: ["2x1 + x2 + x3 >= 20", "x1 + x2 + 2x3 >= 25"])
         tipo_primal: "MAX" o "MIN"
         """
+
         if not fo_primal or not restricciones:
             raise ValueError("Debe especificar función objetivo y al menos una restricción.")
 

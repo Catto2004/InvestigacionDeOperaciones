@@ -58,7 +58,7 @@ def Parsear(expresion: str) -> dict:
     return {"coef": coef, "operador": operador, "constante": constante, "max_var": max_idx}
 
 
-# ---------- helpers de formateo ----------
+# ################ helpers de formateo ################
 def fmt_num(x):
     # Quitar .0 si es entero
     if abs(x - round(x)) < 1e-12:
@@ -93,7 +93,7 @@ def format_linear_combination(coeffs, var_prefix="y"):
     return s
 
 
-# ---------- conversión primal -> dual ----------
+# ################ conversión primal -> dual ################
 def primal_to_dual(c, A, b, tipos, tipo_primal="MAX"):
     """
     c: lista/array (long n)
@@ -157,7 +157,7 @@ def primal_to_dual(c, A, b, tipos, tipo_primal="MAX"):
     return fo, restricciones, condiciones
 
 
-# ---------- programa principal ----------
+# ################ programa principal ################
 if __name__ == "__main__":
     print("=== Conversor Primal → Dual (soporta <=, >=, =) ===")
     

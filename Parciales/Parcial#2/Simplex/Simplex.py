@@ -14,7 +14,7 @@ from . import SolverSimplex
 class SimplexApp(Screen):
     """Pantalla interactiva del Método Simplex paso a paso."""
 
-    # ==================== Variables de la interfaz ====================
+    # ################ Variables de la interfaz ################
     CSS = SimplexTCSS.CSS  # cargar el CSS desde SimplexTCSS.py
     BINDINGS = [
         ("^b", "back", "Volver al menú"),
@@ -24,7 +24,8 @@ class SimplexApp(Screen):
     ]
     TITLE = "Parcial #2 / Algoritmo Simplex"
 
-    # ==================== Variables del problema ====================
+
+    # ################ Variables del problema ################
     Problema = {"modo": "Max", "funcion_objetivo": "", "restricciones": []}
     Iteraciones = []
     Solucion = {}
@@ -32,13 +33,17 @@ class SimplexApp(Screen):
     # Instancia del solver
     Solver = None
 
-    # ==================== Inicialización del solver ====================
+
+    # ################ Inicialización del solver ################
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.Solver = SolverSimplex.SimplexSolver()
 
-    # ==================== Composición de la interfaz ====================
+
+    # ################ Composición de la interfaz ################
     def compose(self) -> ComposeResult:
+        """Define la estructura de la interfaz."""
+
         yield Header()
         yield Footer()
 
@@ -51,14 +56,16 @@ class SimplexApp(Screen):
             with Vertical(id="PanelDerecho"):
                 yield MicroModulos.WidgetTablaIteraciones(id="TablaIteraciones")
 
-    # ==================== Acciones (atajos de teclado) ====================
 
+    # ################ Acciones (atajos de teclado) ################
     def action_back(self):
         """Volver al menú principal."""
+
         self.app.pop_screen()
 
     def action_reset(self):
         """Reinicia todos los widgets y el solver."""
+
         self.query_one("#FuncionObjetivo", MicroModulos.WidgetFuncionObjetivo).Reset()
         self.query_one("#Restricciones", MicroModulos.WidgetRestricciones).Reset()
         self.query_one("#Solucion", MicroModulos.WidgetSolucion).Reset()
@@ -69,8 +76,9 @@ class SimplexApp(Screen):
 
     def action_iterate(self):
         """Ejecuta una iteración del método Simplex y actualiza el tableau visual."""
+
         try:
-            # 1️⃣ Inicialización segura del solver
+            # 1. Inicialización segura del solver
             if self.Solver is None:
                 self.Solver = SolverSimplex.SimplexSolver()
 
@@ -92,14 +100,14 @@ class SimplexApp(Screen):
             self.notify(f"⚠ Error durante la inicialización: {e}", severity="error")
             return
 
-        # 2️⃣ Ejecutar una iteración del método
+        # 2. Ejecutar una iteración del método
         try:
             info = self.Solver.iterate_one()
         except Exception as e:
             self.notify(f"⚠ Error durante la iteración: {e}", severity="error")
             return
 
-        # 3️⃣ Mostrar el resultado en el widget de iteraciones
+        # 3. Mostrar el resultado en el widget de iteraciones
         try:
             tabla_iter = self.query_one("#TablaIteraciones", MicroModulos.WidgetTablaIteraciones)
             sol_widget = self.query_one("#Solucion", MicroModulos.WidgetSolucion)
@@ -128,7 +136,7 @@ class SimplexApp(Screen):
             elif status == "infeasible":
                 self.notify("❌ El problema no tiene solución factible.", severity="error")
             elif status == "phase1_to_phase2":
-                self.notify("🔄 Fin de Fase I → iniciando Fase II...", severity="information")
+                self.notify("⏭️ Fin de Fase I → iniciando Fase II...", severity="information")
 
         except Exception as e:
             self.notify(f"⚠ Error procesando los resultados: {e}", severity="error")
@@ -136,6 +144,7 @@ class SimplexApp(Screen):
 
     def action_demo(self):
         """Carga un ejercicio de demostración y muestra el tableau inicial."""
+
         try:
             # Widgets
             widget_fo = self.query_one("#FuncionObjetivo", MicroModulos.WidgetFuncionObjetivo)
@@ -185,8 +194,4 @@ class SimplexApp(Screen):
             self.notify(f"⚠ Error al cargar demo: {e}", severity="error")
 
 
-    # ==================== Inicio automático ====================
-
-    def on_mount(self):
-        """Preparar la interfaz al cargar."""
 

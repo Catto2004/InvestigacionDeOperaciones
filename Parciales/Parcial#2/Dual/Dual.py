@@ -22,7 +22,7 @@ class DualApp(Screen):
         ("^r", "reset", "Resetear"),
         ("^c", "solve", "Convertir")
     ]
-    TITLE = "Parcial #2 / Conversor de PL Prima -> Dual"
+    TITLE = "Parcial #2 / Conversor de PL Primal - Dual"
 
     # ################ Variables del problema ################
     def _on_mount(self, event):

@@ -10,7 +10,7 @@ from rich.text import Text
 
 import Parser
 
-# ############### Widget "Restricciones"
+# ############### Widget "Restricciones" ###############
 class WidgetRestricciones(Container):
     """Widget para ingresar, mostrar y eliminar restricciones."""
 
@@ -81,7 +81,7 @@ class WidgetRestricciones(Container):
         self.ActualizarTabla()
 
 
-# ############### Widget "Función Objetivo"
+# ############### Widget "Función Objetivo" ###############
 class WidgetFuncionObjetivo(Container):
     """Widget para ingresar y mostrar la función objetivo y el modo (Max/Min)."""
 
@@ -130,7 +130,7 @@ class WidgetFuncionObjetivo(Container):
         self.query_one("#InputFunObj", Input).value = ""
 
 
-# ############### Widget "Solución"
+# ############### Widget "Solución" ###############
 class WidgetSolucion(Container):
     """Widget para mostrar la solución del problema."""
 
@@ -184,7 +184,7 @@ class WidgetSolucion(Container):
         return self.Resultado
 
 
-# ############### Widget "Tabla de Iteraciones" 
+# ############### Widget "Tabla de Iteraciones" ###############
 class WidgetTablaIteraciones(Static):
     """Muestra las iteraciones del método simplex en formato tabular."""
 
@@ -238,3 +238,12 @@ class WidgetTablaIteraciones(Static):
         return self.query_one("#TablaIteraciones", Static).renderable
     
 
+# ############### Widget "Documentación" ###############
+class Documentacion(Container):
+    """Widget para mostrar la documentación en formato markdown."""
+
+    def compose(self):
+        pass
+
+    def Reset(self):
+        pass  # No hay estado que reiniciar en este widget

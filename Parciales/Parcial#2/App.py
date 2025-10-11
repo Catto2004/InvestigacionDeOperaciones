@@ -15,7 +15,7 @@ from DualSimplex.DualSimplex import DualSimplexApp, DualSimplexTCSS
 # Clase principal del menú
 class MenuPrincipal(App):
     CSS = AppTCSS.CSS
-    TITLE = "Investigación de Operaciones - Métodos de PL"
+    TITLE = "Parcial #2: Métodos de PL"
     BINDINGS = [("q", "quit", "Salir")]
 
     # Composición de la interfaz
@@ -24,9 +24,10 @@ class MenuPrincipal(App):
         yield Footer()
         with Vertical(id="menu"):
             yield Static("Seleccione el método a utilizar:", id="tituloMenu")
-            yield Button("Método Simplex", id="botonSimplex")
-            yield Button("Método Dual", id="botonDual")
-            yield Button("Algoritmo Dual Simplex", id="botonAlgDual")
+            yield Button("Algoritmo Simplex", id="botonSimplex")
+            yield Button("Conversión Dual", id="botonDual")
+            yield Button("Algoritmo Simplex Dual", id="botonAlgDual")
+            yield Button("Documentación.", id="botonDoc")
 
     # Manejo de botones
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -36,6 +37,7 @@ class MenuPrincipal(App):
             self.push_screen(DualApp())
         elif event.button.id == "botonAlgDual":
             self.push_screen(DualSimplexApp())
+
 
 # Ejecución de la aplicación
 if __name__ == "__main__":

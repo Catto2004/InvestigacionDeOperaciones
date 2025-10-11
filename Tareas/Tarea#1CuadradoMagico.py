@@ -46,7 +46,7 @@ def resolver():
             valor = int(pulp.value(x[i][j]))
             celdas[i][j].config(text=str(valor))
 
-# ------------------- INTERFAZ TKINTER -------------------
+# ################--------- INTERFAZ TKINTER ################---------
 
 root = tk.Tk()
 root.title("Cuadrado Mágico con PL")
