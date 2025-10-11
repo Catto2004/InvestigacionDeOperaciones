@@ -44,7 +44,7 @@ def Parsear(expresion: str) -> dict:
         # Determinar índice
         if var_str in mapa_vars:
             idx = mapa_vars[var_str]
-        elif var_str.startswith("x") and var_str[1:].isdigit():
+        elif (var_str.startswith("x") or var_str.startswith("y") or var_str.startswith("z")) and var_str[1:].isdigit():
             idx = int(var_str[1:]) - 1
         else:
             raise ValueError(f"Variable no reconocida: {var_str}")
