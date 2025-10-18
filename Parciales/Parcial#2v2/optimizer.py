@@ -233,13 +233,15 @@ class Optimizer:
         return tableau
 
     def _create_tableau_for_dual(self, A, b, c):
-        # Simétrica a _create_tableau_for_primal, con -c en fila objetivo.
         m, n = A.shape
         tableau = np.zeros((m + 1, n + m + 1))
         tableau[:m, :n] = A
         tableau[:m, n:n + m] = np.eye(m)
         tableau[:m, -1] = b
-        tableau[-1, :n] = -c
+
+        # Para Dual Simplex: la fila de costes debe reflejar la dual-factibilidad inicial.
+        # Usamos +c en vez de -c para que la fila de costes sea compatible con la base de holguras.
+        tableau[-1, :n] = c
         tableau[-1, -1] = 0.0
         return tableau
 
