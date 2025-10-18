@@ -3,11 +3,13 @@
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, Container
-from textual.widgets import Input, Button, Static, Label, DataTable
+from textual.widgets import Input, Button, Static, Label, DataTable, Markdown, Header, Footer, Markdown
 from textual.reactive import reactive
+from textual.screen import Screen
 
 from rich.text import Text
 
+import os
 import Parser
 
 # ############### Widget "Restricciones" ###############
@@ -239,8 +241,68 @@ class WidgetTablaIteraciones(Static):
     
 
 # ############### Widget "Documentación" ###############
-class Documentacion(Container):
+class Documentacion(Screen):
     """Widget para mostrar la documentación en formato markdown."""
 
-    def compose(self):
-        pass
+    TITLE = "Parcial #2: Documentación"
+
+    BINDINGS = [
+        ("b", "back", "Regresar"),
+        ("q", "quit", "Salir")]
+
+    def __init__(self, archivo: str = "README.md", *args, **kwargs):
+        """
+        Inicializa el widget de documentación.
+        
+        Args:
+            archivo: Ruta del archivo markdown a cargar (por defecto README.md)
+        """
+        super().__init__(*args, **kwargs)
+        self.archivo = archivo
+
+    def compose(self) -> ComposeResult:
+        """Composición del widget."""
+        yield Header()
+        
+        # Cargar y mostrar contenido - Markdown maneja el scroll automáticamente
+        contenido = self.cargar_archivo(self.archivo)
+        yield Markdown(contenido, id="markdown_viewer")
+        
+        yield Footer()
+
+    def cargar_archivo(self, ruta: str) -> str:
+        """
+        Carga el contenido de un archivo markdown.
+        
+        Args:
+            ruta: Ruta del archivo a cargar
+            
+        Returns:
+            Contenido del archivo o mensaje de error
+        """
+        try:
+            if not os.path.exists(ruta):
+                return self._mensaje_error(f"❌ Archivo no encontrado: {ruta}")
+            
+            with open(ruta, "r", encoding="utf-8") as f:
+                contenido = f.read()
+            
+            if not contenido.strip():
+                return self._mensaje_error(f"⚠️ El archivo está vacío: {ruta}")
+            
+            return contenido
+            
+        except UnicodeDecodeError:
+            return self._mensaje_error(f"⚠️ Error de codificación en: {ruta}")
+        except PermissionError:
+            return self._mensaje_error(f"🔒 Sin permisos para leer: {ruta}")
+        except Exception as e:
+            return self._mensaje_error(f"❌ Error inesperado: {str(e)}")
+
+    def _mensaje_error(self, mensaje: str) -> str:
+        """Genera un mensaje de error en formato markdown."""
+        return f"""# Error al cargar documentación"""
+
+    def action_back(self) -> None:
+        """Regresa a la pantalla anterior."""
+        self.app.pop_screen()

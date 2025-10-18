@@ -11,6 +11,8 @@ import AppTCSS
 from Simplex.Simplex import SimplexApp, SimplexTCSS, SolverSimplex
 from Dual.Dual import DualApp, DualTCSS, DualConversor
 from DualSimplex.DualSimplex import DualSimplexApp, DualSimplexTCSS
+from MicroModulos import Documentacion
+
 
 # Clase principal del menú
 class MenuPrincipal(App):
@@ -37,6 +39,8 @@ class MenuPrincipal(App):
             self.push_screen(DualApp())
         elif event.button.id == "botonAlgDual":
             self.push_screen(DualSimplexApp())
+        elif event.button.id == "botonDoc":
+            self.push_screen(Documentacion())
 
 
 # Ejecución de la aplicación

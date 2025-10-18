@@ -176,6 +176,8 @@ class DualSimplexApp(Screen):
                 return
 
             # Guardar el problema primal
+            # Cambia el estado del estado Dual
+            self.EsDual = True
             self.Problema = {
                 "modo": modo,
                 "funcion_objetivo": funcion,
