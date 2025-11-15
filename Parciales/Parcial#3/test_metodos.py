@@ -1,9 +1,9 @@
 """
 Archivo de prueba para los tres métodos de transporte
 """
-from EsquinaOeste import metodo_esquina_noroeste
-from MenorCosto import metodo_menor_costo
-from MetodoVoguel import metodo_vogel
+from EsquinaOeste import MetodoEsquinaNoroeste
+from MenorCosto import MetodoMenorCosto
+from MetodoVoguel import MetodoVogel
 
 
 def imprimir_resultado(nombre_metodo, asignacion, costo):
@@ -41,15 +41,15 @@ print(f"Total oferta: {sum(oferta)}")
 print(f"Total demanda: {sum(demanda)}")
 
 # Método 1: Esquina Noroeste
-resultado1, costo1 = metodo_esquina_noroeste(costos, oferta, demanda)
+resultado1, costo1 = MetodoEsquinaNoroeste(costos, oferta, demanda)
 imprimir_resultado("MÉTODO DE LA ESQUINA NOROESTE", resultado1, costo1)
 
 # Método 2: Menor Costo
-resultado2, costo2 = metodo_menor_costo(costos, oferta, demanda)
+resultado2, costo2 = MetodoMenorCosto(costos, oferta, demanda)
 imprimir_resultado("MÉTODO DEL MENOR COSTO", resultado2, costo2)
 
 # Método 3: Vogel
-resultado3, costo3 = metodo_vogel(costos, oferta, demanda)
+resultado3, costo3 = MetodoVogel(costos, oferta, demanda)
 imprimir_resultado("MÉTODO DE VOGEL (VAM)", resultado3, costo3)
 
 # Comparación

@@ -5,7 +5,7 @@ Para problemas de transporte
 import numpy as np
 
 
-def metodo_esquina_noroeste(costos, oferta, demanda):
+def MetodoEsquinaNoroeste(costos, oferta, demanda):
     """
     Método de la Esquina Noroeste para problemas de transporte.
     
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     oferta = [30, 40, 20]
     demanda = [20, 25, 30, 15]
     
-    resultado, costo = metodo_esquina_noroeste(costos, oferta, demanda)
+    resultado, costo = MetodoEsquinaNoroeste(costos, oferta, demanda)
     
     print("Matriz de asignación:")
     for fila in resultado:

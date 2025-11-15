@@ -5,7 +5,7 @@ Para problemas de transporte
 import numpy as np
 
 
-def metodo_menor_costo(costos, oferta, demanda):
+def MetodoMenorCosto(costos, oferta, demanda):
     """
     Método del Menor Costo para problemas de transporte.
     Asigna primero a las celdas con menor costo.
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     oferta = [30, 40, 20]
     demanda = [20, 25, 30, 15]
     
-    resultado, costo = metodo_menor_costo(costos, oferta, demanda)
+    resultado, costo = MetodoMenorCosto(costos, oferta, demanda)
     
     print("Matriz de asignación:")
     for fila in resultado:

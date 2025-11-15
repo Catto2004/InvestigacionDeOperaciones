@@ -5,7 +5,7 @@ Para problemas de transporte
 import numpy as np
 
 
-def metodo_vogel(costos, oferta, demanda):
+def MetodoVogel(costos, oferta, demanda):
     """
     Método de Aproximación de Vogel para problemas de transporte.
     Utiliza penalizaciones para seleccionar las mejores asignaciones.
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     oferta = [30, 40, 20]
     demanda = [20, 25, 30, 15]
     
-    resultado, costo = metodo_vogel(costos, oferta, demanda)
+    resultado, costo = MetodoVogel(costos, oferta, demanda)
     
     print("Matriz de asignación:")
     for fila in resultado:

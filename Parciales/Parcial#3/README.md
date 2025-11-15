@@ -1,4 +1,4 @@
-# Métodos de Solución para Problemas de Transporte
+Métodos de Solución para Problemas de Transporte
 
 Implementación de tres métodos heurísticos para encontrar soluciones básicas factibles iniciales en problemas de transporte.
 
