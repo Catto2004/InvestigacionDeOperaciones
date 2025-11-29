@@ -222,7 +222,6 @@ class AplicacionRutaMinima:
         self.panel_derecho.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         self.crear_panel_nodos()
-        self.crear_panel_aristas()
         self.crear_panel_algoritmos()
         self.crear_panel_resultados()
         self.crear_panel_grafo()
@@ -263,27 +262,6 @@ class AplicacionRutaMinima:
         ttk.Button(frame, text="Cancelar Seleccion", 
                   command=self.cancelar_seleccion).pack(fill=tk.X, pady=5)
     
-    def crear_panel_aristas(self):
-        frame = ttk.LabelFrame(self.panel_izquierdo, text=" Gestion Manual", padding="10")
-        frame.pack(fill=tk.X, pady=5)
-        
-        od_frame = ttk.Frame(frame)
-        od_frame.pack(fill=tk.X, pady=2)
-        
-        ttk.Label(od_frame, text="Origen:").pack(side=tk.LEFT)
-        self.combo_origen = ttk.Combobox(od_frame, width=6, state="readonly")
-        self.combo_origen.pack(side=tk.LEFT, padx=3)
-        
-        ttk.Label(od_frame, text="Dest:").pack(side=tk.LEFT, padx=(5, 0))
-        self.combo_destino = ttk.Combobox(od_frame, width=6, state="readonly")
-        self.combo_destino.pack(side=tk.LEFT, padx=3)
-        
-        btn_frame = ttk.Frame(frame)
-        btn_frame.pack(fill=tk.X, pady=5)
-        
-        ttk.Button(btn_frame, text="+ Camino", command=self.agregar_arista, width=10).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="- Camino", command=self.eliminar_arista, width=10).pack(side=tk.LEFT, padx=2)
-    
     def crear_panel_algoritmos(self):
         frame = ttk.LabelFrame(self.panel_izquierdo, text=" Resolver Ruta Minima", padding="10")
         frame.pack(fill=tk.X, pady=5)
@@ -314,14 +292,16 @@ class AplicacionRutaMinima:
         frame = ttk.LabelFrame(self.panel_izquierdo, text=" Resultados", padding="10")
         frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.text_resultados = tk.Text(frame, height=10, width=40, font=('Consolas', 10))
-        self.text_resultados.pack(fill=tk.BOTH, expand=True)
-        
+        # Botones arriba para que sean visibles
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Button(btn_frame, text="Limpiar Grafo", command=self.limpiar_grafo).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="Cargar Ejemplo", command=self.cargar_ejemplo).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="Limpiar", command=self.limpiar_grafo).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="Ejemplo", command=self.cargar_ejemplo).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="Colombia", command=self.cargar_ejemplo_colombia).pack(side=tk.LEFT, padx=2)
+        
+        self.text_resultados = tk.Text(frame, height=10, width=40, font=('Consolas', 10))
+        self.text_resultados.pack(fill=tk.BOTH, expand=True)
     
     def crear_panel_grafo(self):
         frame = ttk.LabelFrame(self.panel_derecho, text=" Visualizacion del Grafo (Haz clic para interactuar)", padding="5")
@@ -332,6 +312,13 @@ class AplicacionRutaMinima:
         
         self.canvas = FigureCanvasTkAgg(self.figura, master=frame)
         self.canvas.draw()
+        
+        # Barra de herramientas de navegación (zoom, pan, guardar, etc.)
+        toolbar_frame = ttk.Frame(frame)
+        toolbar_frame.pack(fill=tk.X)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
+        self.toolbar.update()
+        
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
         # Instrucciones
@@ -347,7 +334,7 @@ class AplicacionRutaMinima:
     
     def actualizar_combos(self):
         nodos = list(self.grafo.grafo.nodes())
-        for combo in [self.combo_origen, self.combo_destino, self.combo_inicio, self.combo_fin]:
+        for combo in [self.combo_inicio, self.combo_fin]:
             combo['values'] = nodos
     
     def actualizar_grafo(self):
@@ -377,11 +364,11 @@ class AplicacionRutaMinima:
                     colores_nodos.append('#87CEEB')  # Azul claro - Normal
             
             nx.draw_networkx_nodes(self.grafo.grafo, self.grafo.posiciones, ax=self.ax,
-                                  node_color=colores_nodos, node_size=800,
-                                  edgecolors='black', linewidths=2)
+                                  node_color=colores_nodos, node_size=500,
+                                  edgecolors='black', linewidths=1.5)
             
             nx.draw_networkx_labels(self.grafo.grafo, self.grafo.posiciones, ax=self.ax,
-                                   font_size=12, font_weight='bold')
+                                   font_size=8, font_weight='normal')
             
             aristas_camino = []
             aristas_normales = []
@@ -412,8 +399,8 @@ class AplicacionRutaMinima:
         
         self.ax.set_title("Grafo de Rutas", fontsize=14, fontweight='bold')
         self.ax.axis('off')
-        self.ax.set_xlim(-0.1, 1.1)
-        self.ax.set_ylim(-0.1, 1.1)
+        self.ax.set_xlim(-0.10, 1.18)
+        self.ax.set_ylim(-0.40, 1.70)
         self.figura.tight_layout()
         self.canvas.draw()
         
@@ -536,69 +523,6 @@ class AplicacionRutaMinima:
         self.label_seleccion.config(text="")
         self.actualizar_grafo()
     
-    def agregar_nodo(self):
-        """Agrega nodo desde los campos de texto (metodo manual)."""
-        nombre = simpledialog.askstring("Nuevo Nodo", "Nombre del nodo:")
-        if nombre:
-            nombre = nombre.strip().upper()
-            if nombre in self.grafo.grafo.nodes():
-                messagebox.showwarning("Advertencia", f"El nodo '{nombre}' ya existe")
-                return
-            self.grafo.agregar_nodo(nombre, 0.5, 0.5)
-            self.mostrar_mensaje(f"Nodo '{nombre}' agregado")
-            self.actualizar_grafo()
-    
-    def eliminar_nodo(self):
-        """Elimina nodo seleccionado en combo."""
-        nombre = self.combo_origen.get()
-        if not nombre:
-            messagebox.showwarning("Advertencia", "Seleccione un nodo en 'Origen'")
-            return
-        
-        self.grafo.eliminar_nodo(nombre)
-        self.camino_actual = []
-        self.mostrar_mensaje(f"Nodo '{nombre}' eliminado")
-        self.actualizar_grafo()
-    
-    def agregar_arista(self):
-        origen = self.combo_origen.get()
-        destino = self.combo_destino.get()
-        
-        if not origen or not destino:
-            messagebox.showwarning("Advertencia", "Seleccione origen y destino")
-            return
-        
-        if origen == destino:
-            messagebox.showwarning("Advertencia", "Origen y destino deben ser diferentes")
-            return
-        
-        try:
-            peso = float(self.entry_peso.get())
-        except ValueError:
-            messagebox.showwarning("Advertencia", "Ingrese un peso valido")
-            return
-        
-        bidireccional = self.var_bidireccional.get()
-        self.grafo.agregar_arista(origen, destino, peso, bidireccional)
-        
-        direccion = "<->" if bidireccional else "->"
-        self.mostrar_mensaje(f"Camino agregado: {origen} {direccion} {destino} (peso: {peso})")
-        self.actualizar_grafo()
-    
-    def eliminar_arista(self):
-        origen = self.combo_origen.get()
-        destino = self.combo_destino.get()
-        
-        if not origen or not destino:
-            messagebox.showwarning("Advertencia", "Seleccione origen y destino")
-            return
-        
-        self.grafo.eliminar_arista(origen, destino)
-        self.camino_actual = []
-        
-        self.mostrar_mensaje(f"Camino eliminado: {origen} -> {destino}")
-        self.actualizar_grafo()
-    
     def resolver(self, algoritmo: str):
         inicio = self.combo_inicio.get()
         fin = self.combo_fin.get()
@@ -619,7 +543,7 @@ class AplicacionRutaMinima:
             nombre_algo = "A* (A-ESTRELLA)"
         else:
             camino, distancia = self.grafo.bellman_ford(inicio, fin)
-            nombre_algo = "BELLMAN-FORD"
+            nombre_algo = "Distancia Minima"
         
         self.camino_actual = camino
         
@@ -713,6 +637,175 @@ class AplicacionRutaMinima:
         self.camino_actual = []
         self.cancelar_seleccion()
         self.mostrar_mensaje("Ejemplo cargado\n\nNodos: A, B, C, D, E, F\n\nModos de interaccion:\n- Agregar Nodo: clic en area vacia\n- Conectar: clic en 2 nodos\n- Mover: arrastrar nodo")
+        self.actualizar_grafo()
+    
+    def cargar_ejemplo_colombia(self):
+        """Carga el mapa de Colombia con ciudades principales y municipios intermedios."""
+        self.grafo.limpiar()
+        
+        # Coordenadas normalizadas (0-1) basadas en posición geográfica aproximada
+        # Colombia: Lat 12°N a -4°S, Lon -79°W a -67°W
+        # Transformamos: x = (lon + 79) / 12, y = (lat + 4) / 16
+        
+        ciudades = [
+            # Capitales y ciudades principales (espaciado vertical x1.3)
+            ("Bogotá", 0.55, 0.65),           # Cundinamarca
+            ("Medellín", 0.30, 0.94),         # Antioquia  
+            ("Cali", 0.20, 0.29),             # Valle del Cauca
+            ("Barranquilla", 0.50, 1.53),     # Atlántico
+            ("Cartagena", 0.30, 1.46),        # Bolívar
+            ("Cúcuta", 0.95, 1.07),           # Norte de Santander
+            ("Bucaramanga", 0.78, 0.94),      # Santander
+            ("Pereira", 0.28, 0.68),          # Risaralda
+            ("Manizales", 0.32, 0.81),        # Caldas
+            ("Santa Marta", 0.58, 1.59),      # Magdalena
+            ("Ibagué", 0.45, 0.55),           # Tolima
+            ("Pasto", 0.12, -0.20),           # Nariño
+            ("Neiva", 0.52, 0.23),            # Huila
+            ("Villavicencio", 0.78, 0.49),    # Meta
+            ("Armenia", 0.22, 0.59),          # Quindío
+            ("Popayán", 0.18, 0.03),          # Cauca
+            ("Montería", 0.15, 1.24),         # Córdoba
+            ("Valledupar", 0.68, 1.33),       # Cesar
+            ("Tunja", 0.62, 0.75),            # Boyacá
+            ("Florencia", 0.50, -0.10),       # Caquetá
+            
+            # Municipios intermedios importantes
+            ("Honda", 0.48, 0.78),            # Tolima - conexión histórica
+            ("Girardot", 0.52, 0.55),         # Cundinamarca
+            ("La Dorada", 0.42, 0.88),        # Caldas
+            ("Barrancabermeja", 0.60, 1.14),  # Santander - río Magdalena
+            ("Sogamoso", 0.78, 0.75),         # Boyacá
+            ("Duitama", 0.72, 0.81),          # Boyacá
+            ("Aguachica", 0.68, 1.24),        # Cesar
+            ("Ocaña", 0.85, 1.14),            # Norte de Santander
+            ("Buga", 0.12, 0.42),             # Valle del Cauca
+            ("Palmira", 0.15, 0.34),          # Valle del Cauca
+            ("Tulúa", 0.08, 0.49),            # Valle del Cauca
+            ("Cartago", 0.18, 0.62),          # Valle del Cauca
+            ("Ipiales", 0.08, -0.29),         # Nariño - frontera Ecuador
+            ("Tumaco", 0.02, -0.10),          # Nariño - costa pacífica
+            ("Buenaventura", 0.02, 0.29),     # Valle - puerto pacífico
+            ("Sincelejo", 0.35, 1.30),        # Sucre
+            ("Magangué", 0.42, 1.27),         # Bolívar
+            ("Caucasia", 0.32, 1.11),         # Antioquia
+            ("Apartadó", 0.08, 1.11),         # Antioquia - Urabá
+            ("Riohacha", 0.75, 1.59),         # La Guajira
+            ("Pitalito", 0.35, 0.07),         # Huila - entre Neiva y Popayán
+            
+            # Oriente colombiano (Llanos y Amazonía)
+            ("San Vicente del Caguán", 0.62, -0.03), # Caquetá
+            ("San José del Guaviare", 0.72, 0.16),   # Guaviare
+            ("Yopal", 0.82, 0.68),            # Casanare
+            ("Arauca", 0.95, 0.94),           # Arauca
+            ("Puerto Carreño", 1.05, 0.72),   # Vichada
+        ]
+        
+        # Carreteras principales con distancias aproximadas en km
+        carreteras = [
+            # Ruta Caribe
+            ("Bogotá", "Tunja", 123),
+            ("Tunja", "Duitama", 50),
+            ("Duitama", "Sogamoso", 20),
+            ("Tunja", "Bucaramanga", 287),
+            ("Bucaramanga", "Cúcuta", 192),
+            ("Bucaramanga", "Barrancabermeja", 115),
+            ("Barrancabermeja", "Aguachica", 145),
+            ("Aguachica", "Valledupar", 165),
+            ("Valledupar", "Santa Marta", 166),
+            ("Santa Marta", "Barranquilla", 100),
+            ("Barranquilla", "Cartagena", 120),
+            ("Valledupar", "Riohacha", 173),
+            
+            # Ruta Central
+            ("Bogotá", "Girardot", 134),
+            ("Girardot", "Ibagué", 104),
+            ("Ibagué", "Armenia", 82),
+            ("Armenia", "Pereira", 45),
+            ("Pereira", "Manizales", 53),
+            ("Manizales", "Medellín", 194),
+            ("Ibagué", "Honda", 100),
+            ("Honda", "La Dorada", 35),
+            ("La Dorada", "Medellín", 180),
+            
+            # Ruta Occidente  
+            ("Armenia", "Cartago", 65),
+            ("Cartago", "Pereira", 50),
+            ("Cartago", "Tulúa", 102),
+            ("Tulúa", "Buga", 32),
+            ("Buga", "Palmira", 48),
+            ("Palmira", "Cali", 25),
+            ("Cali", "Buenaventura", 141),
+            ("Cali", "Popayán", 140),
+            ("Popayán", "Pasto", 258),
+            ("Pasto", "Ipiales", 80),
+            ("Pasto", "Tumaco", 300),
+            
+            # Ruta Huila-Caquetá
+            ("Bogotá", "Neiva", 312),
+            ("Ibagué", "Neiva", 210),
+            ("Neiva", "Pitalito", 188),
+            ("Pitalito", "Popayán", 180),
+            ("Neiva", "Florencia", 262),
+            ("Florencia", "San Vicente del Caguán", 153),
+            
+            # Ruta Llanos y Oriente
+            ("Bogotá", "Villavicencio", 120),
+            ("Villavicencio", "San José del Guaviare", 277),
+            ("Bogotá", "Yopal", 387),
+            ("Yopal", "Arauca", 285),
+            ("Villavicencio", "Puerto Carreño", 858),
+            ("Yopal", "Sogamoso", 215),
+            
+            # Costa Caribe
+            ("Cartagena", "Sincelejo", 195),
+            ("Sincelejo", "Montería", 95),
+            ("Sincelejo", "Magangué", 95),
+            ("Magangué", "Cartagena", 200),
+            
+            # Conexión Antioquia
+            ("Medellín", "Caucasia", 280),
+            ("Caucasia", "Montería", 135),
+            ("Montería", "Apartadó", 250),
+            ("Medellín", "Apartadó", 344),
+            
+            # Otras conexiones importantes
+            ("Cúcuta", "Ocaña", 195),
+            ("Ocaña", "Aguachica", 115),
+            ("Bogotá", "Honda", 145),
+        ]
+        
+        # Agregar ciudades como nodos
+        for nombre, x, y in ciudades:
+            self.grafo.agregar_nodo(nombre, x, y)
+        
+        # Agregar carreteras bidireccionales
+        for origen, destino, distancia in carreteras:
+            self.grafo.agregar_arista(origen, destino, distancia, bidireccional=True)
+        
+        self.contador_nodos = len(ciudades)
+        self.camino_actual = []
+        self.cancelar_seleccion()
+        
+        mensaje = """🇨🇴 Mapa de Colombia Cargado
+
+Ciudades: {} nodos
+Carreteras: {} conexiones
+
+Incluye:
+• Capitales departamentales
+• Ciudades intermedias importantes
+• Distancias reales aproximadas (km)
+
+Ejemplos de rutas:
+• Bogotá → Cartagena (via Bucaramanga)
+• Cali → Medellín (via Pereira)
+• Bogotá → Santa Marta
+
+Selecciona origen y destino para
+calcular la ruta más corta.""".format(len(ciudades), len(carreteras))
+        
+        self.mostrar_mensaje(mensaje)
         self.actualizar_grafo()
     
     def mostrar_mensaje(self, mensaje: str):
