@@ -1,6 +1,6 @@
 """
-Algoritmos de Ruta Minima con Interfaz Grafica
-Dijkstra | A* | Bellman-Ford
+Algoritmos de Ruta Minima y Optimizacion de Redes con Interfaz Grafica
+Dijkstra | A* | Bellman-Ford | Floyd-Warshall | Arbol de Expansion Minima (Prim)
 """
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
@@ -8,7 +8,7 @@ import networkx as nx
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import heapq
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import string
 
 
@@ -180,6 +180,111 @@ class GrafoRutaMinima:
         
         return camino, distancias[fin]
     
+    def floyd_warshall(self) -> Tuple[Dict[str, Dict[str, float]], Dict[str, Dict[str, str]]]:
+        """
+        Algoritmo de Floyd-Warshall: encuentra las rutas más cortas entre TODOS los pares de nodos.
+        Retorna: (matriz de distancias, matriz de predecesores)
+        """
+        nodos = list(self.grafo.nodes())
+        n = len(nodos)
+        
+        # Inicializar matrices de distancia y predecesores
+        dist = {u: {v: float('inf') for v in nodos} for u in nodos}
+        pred = {u: {v: None for v in nodos} for u in nodos}
+        
+        # Distancia de un nodo a sí mismo es 0
+        for nodo in nodos:
+            dist[nodo][nodo] = 0
+        
+        # Inicializar con las aristas existentes
+        for u, v, data in self.grafo.edges(data=True):
+            dist[u][v] = data['weight']
+            pred[u][v] = u
+        
+        # Algoritmo Floyd-Warshall: k es el nodo intermedio
+        for k in nodos:
+            for i in nodos:
+                for j in nodos:
+                    if dist[i][k] + dist[k][j] < dist[i][j]:
+                        dist[i][j] = dist[i][k] + dist[k][j]
+                        pred[i][j] = pred[k][j]
+        
+        return dist, pred
+    
+    def reconstruir_camino_floyd(self, pred: Dict[str, Dict[str, str]], inicio: str, fin: str) -> List[str]:
+        """Reconstruye el camino desde la matriz de predecesores de Floyd-Warshall."""
+        if pred[inicio][fin] is None:
+            return []
+        
+        camino = [fin]
+        actual = fin
+        while actual != inicio:
+            actual = pred[inicio][actual]
+            if actual is None:
+                return []
+            camino.append(actual)
+        
+        camino.reverse()
+        return camino
+    
+    def prim_mst(self, inicio: str = None) -> Tuple[List[Tuple[str, str, float]], float]:
+        """
+        Algoritmo de Prim: encuentra el Árbol de Expansión Mínima (MST).
+        
+        Retorna: (lista de aristas del MST, costo total)
+        Cada arista es (nodo1, nodo2, peso)
+        """
+        nodos = list(self.grafo.nodes())
+        if not nodos:
+            return [], 0
+        
+        # Si no se especifica inicio, usar el primer nodo
+        if inicio is None or inicio not in nodos:
+            inicio = nodos[0]
+        
+        # Crear grafo no dirigido para MST (consideramos ambas direcciones)
+        grafo_no_dirigido = {}
+        for nodo in nodos:
+            grafo_no_dirigido[nodo] = []
+        
+        for u, v, data in self.grafo.edges(data=True):
+            peso = data['weight']
+            grafo_no_dirigido[u].append((v, peso))
+            grafo_no_dirigido[v].append((u, peso))  # Agregar en ambas direcciones
+        
+        # Conjuntos de nodos conectados y no conectados
+        conectados = {inicio}
+        no_conectados = set(nodos) - conectados
+        
+        # Cola de prioridad: (peso, nodo_origen, nodo_destino)
+        cola = []
+        for vecino, peso in grafo_no_dirigido[inicio]:
+            heapq.heappush(cola, (peso, inicio, vecino))
+        
+        aristas_mst = []
+        costo_total = 0
+        
+        while no_conectados and cola:
+            peso, u, v = heapq.heappop(cola)
+            
+            if v in conectados:
+                continue
+            
+            # Agregar arista al MST
+            aristas_mst.append((u, v, peso))
+            costo_total += peso
+            
+            # Mover v a conectados
+            conectados.add(v)
+            no_conectados.discard(v)
+            
+            # Agregar aristas del nuevo nodo a la cola
+            for vecino, peso_arista in grafo_no_dirigido[v]:
+                if vecino not in conectados:
+                    heapq.heappush(cola, (peso_arista, v, vecino))
+        
+        return aristas_mst, costo_total
+    
     def limpiar(self):
         self.grafo.clear()
         self.posiciones.clear()
@@ -191,7 +296,7 @@ class AplicacionRutaMinima:
     
     def __init__(self, root):
         self.root = root
-        self.root.title("Algoritmos de Ruta Minima - Dijkstra | A* | Bellman-Ford")
+        self.root.title("Algoritmos de Optimización de Redes - Dijkstra | A* | Bellman-Ford | Floyd | MST")
         self.root.geometry("1200x800")
         self.root.minsize(1000, 700)
         
@@ -200,6 +305,7 @@ class AplicacionRutaMinima:
         
         self.grafo = GrafoRutaMinima()
         self.camino_actual = []
+        self.aristas_mst = []  # Para resaltar el MST
         
         # Variables para interaccion con mouse
         self.modo_interaccion = tk.StringVar(value="agregar_nodo")
@@ -214,9 +320,33 @@ class AplicacionRutaMinima:
         self.main_frame = ttk.Frame(self.root, padding="5")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
-        self.panel_izquierdo = ttk.Frame(self.main_frame, width=350)
-        self.panel_izquierdo.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
-        self.panel_izquierdo.pack_propagate(False)
+        # Panel izquierdo con scroll
+        panel_izq_container = ttk.Frame(self.main_frame, width=335)
+        panel_izq_container.pack(side=tk.LEFT, fill=tk.Y, padx=0, pady=5)
+        panel_izq_container.pack_propagate(False)
+        
+        # Canvas con scrollbar para el panel izquierdo
+        scrollbar = ttk.Scrollbar(panel_izq_container, orient="vertical")
+        canvas = tk.Canvas(panel_izq_container, highlightthickness=0, bd=0, 
+                          yscrollcommand=scrollbar.set)
+        scrollbar.config(command=canvas.yview)
+        
+        self.panel_izquierdo = ttk.Frame(canvas)
+        
+        self.panel_izquierdo.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=self.panel_izquierdo, anchor="nw", width=315)
+        
+        # Scroll con rueda del mouse
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=0)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=0)
         
         self.panel_derecho = ttk.Frame(self.main_frame)
         self.panel_derecho.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -283,22 +413,33 @@ class AplicacionRutaMinima:
         ttk.Button(frame, text="Dijkstra", command=lambda: self.resolver("dijkstra"), **btn_style).pack(pady=2)
         ttk.Button(frame, text="A* (A-Estrella)", command=lambda: self.resolver("a_estrella"), **btn_style).pack(pady=2)
         ttk.Button(frame, text="Bellman-Ford", command=lambda: self.resolver("bellman_ford"), **btn_style).pack(pady=2)
+        ttk.Button(frame, text="Floyd-Warshall", command=lambda: self.resolver("floyd"), **btn_style).pack(pady=2)
         
         ttk.Separator(frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=10)
         
         ttk.Button(frame, text="Comparar Todos", command=self.comparar_todos, **btn_style).pack(pady=2)
+        
+        # Sección para Árbol de Expansión Mínima
+        frame_mst = ttk.LabelFrame(self.panel_izquierdo, text=" Árbol de Expansión Mínima", padding="10")
+        frame_mst.pack(fill=tk.X, pady=5)
+        
+        ttk.Button(frame_mst, text="Calcular MST (Prim)", command=self.calcular_mst, **btn_style).pack(pady=2)
+        ttk.Button(frame_mst, text="Floyd: Todas las Rutas", command=self.mostrar_floyd_completo, **btn_style).pack(pady=2)
+        
+        # Botones de ejemplos - SIEMPRE VISIBLES
+        frame_ejemplos = ttk.LabelFrame(self.panel_izquierdo, text=" Cargar Ejemplos", padding="10")
+        frame_ejemplos.pack(fill=tk.X, pady=5)
+        
+        btn_ej_frame = ttk.Frame(frame_ejemplos)
+        btn_ej_frame.pack(fill=tk.X)
+        
+        ttk.Button(btn_ej_frame, text="Limpiar", command=self.limpiar_grafo, width=8).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_ej_frame, text="Ejemplo", command=self.cargar_ejemplo, width=8).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_ej_frame, text="🇨🇴 Colombia", command=self.cargar_ejemplo_colombia, width=12).pack(side=tk.LEFT, padx=2)
     
     def crear_panel_resultados(self):
         frame = ttk.LabelFrame(self.panel_izquierdo, text=" Resultados", padding="10")
         frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        
-        # Botones arriba para que sean visibles
-        btn_frame = ttk.Frame(frame)
-        btn_frame.pack(fill=tk.X, pady=5)
-        
-        ttk.Button(btn_frame, text="Limpiar", command=self.limpiar_grafo).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="Ejemplo", command=self.cargar_ejemplo).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="Colombia", command=self.cargar_ejemplo_colombia).pack(side=tk.LEFT, padx=2)
         
         self.text_resultados = tk.Text(frame, height=10, width=40, font=('Consolas', 10))
         self.text_resultados.pack(fill=tk.BOTH, expand=True)
@@ -371,21 +512,42 @@ class AplicacionRutaMinima:
                                    font_size=8, font_weight='normal')
             
             aristas_camino = []
+            aristas_mst = []
             aristas_normales = []
             
+            # Aristas del camino (ruta más corta)
             if self.camino_actual:
                 for i in range(len(self.camino_actual) - 1):
                     aristas_camino.append((self.camino_actual[i], self.camino_actual[i + 1]))
             
+            # Aristas del MST
+            if self.aristas_mst:
+                for u, v, _ in self.aristas_mst:
+                    aristas_mst.append((u, v))
+                    # También agregar la dirección inversa si existe
+                    if self.grafo.grafo.has_edge(v, u):
+                        aristas_mst.append((v, u))
+            
             for arista in self.grafo.grafo.edges():
-                if arista not in aristas_camino:
+                if arista not in aristas_camino and arista not in aristas_mst:
                     aristas_normales.append(arista)
             
+            # Dibujar aristas normales (gris)
             nx.draw_networkx_edges(self.grafo.grafo, self.grafo.posiciones, ax=self.ax,
                                   edgelist=aristas_normales, edge_color='gray',
                                   arrows=True, arrowsize=20,
                                   connectionstyle="arc3,rad=0.1")
             
+            # Dibujar aristas del MST (verde)
+            if aristas_mst:
+                aristas_mst_existentes = [e for e in aristas_mst if self.grafo.grafo.has_edge(*e)]
+                if aristas_mst_existentes:
+                    nx.draw_networkx_edges(self.grafo.grafo, self.grafo.posiciones, ax=self.ax,
+                                          edgelist=aristas_mst_existentes, edge_color='#32CD32',
+                                          width=3, arrows=True, arrowsize=25,
+                                          connectionstyle="arc3,rad=0.1")
+            
+            # Dibujar aristas del camino (naranja/rojo - prioridad máxima)
             if aristas_camino:
                 nx.draw_networkx_edges(self.grafo.grafo, self.grafo.posiciones, ax=self.ax,
                                       edgelist=aristas_camino, edge_color='#FF4500',
@@ -535,15 +697,23 @@ class AplicacionRutaMinima:
             messagebox.showwarning("Advertencia", "Inicio y fin deben ser diferentes")
             return
         
+        # Limpiar MST cuando se busca ruta
+        self.aristas_mst = []
+        
         if algoritmo == "dijkstra":
             camino, distancia = self.grafo.dijkstra(inicio, fin)
             nombre_algo = "DIJKSTRA"
         elif algoritmo == "a_estrella":
             camino, distancia = self.grafo.a_estrella(inicio, fin)
             nombre_algo = "A* (A-ESTRELLA)"
+        elif algoritmo == "floyd":
+            dist, pred = self.grafo.floyd_warshall()
+            camino = self.grafo.reconstruir_camino_floyd(pred, inicio, fin)
+            distancia = dist[inicio][fin] if dist[inicio][fin] != float('inf') else float('inf')
+            nombre_algo = "FLOYD-WARSHALL"
         else:
             camino, distancia = self.grafo.bellman_ford(inicio, fin)
-            nombre_algo = "Distancia Minima"
+            nombre_algo = "BELLMAN-FORD"
         
         self.camino_actual = camino
         
@@ -603,10 +773,103 @@ class AplicacionRutaMinima:
         self.mostrar_mensaje(resultado)
         self.actualizar_grafo()
     
+    def calcular_mst(self):
+        """Calcula y muestra el Árbol de Expansión Mínima usando Prim."""
+        if len(self.grafo.grafo.nodes()) < 2:
+            messagebox.showwarning("Advertencia", "Se necesitan al menos 2 nodos")
+            return
+        
+        # Limpiar camino actual
+        self.camino_actual = []
+        
+        aristas_mst, costo_total = self.grafo.prim_mst()
+        self.aristas_mst = aristas_mst
+        
+        resultado = "="*35 + "\n"
+        resultado += "  ÁRBOL DE EXPANSIÓN MÍNIMA\n"
+        resultado += "  (Algoritmo de Prim)\n"
+        resultado += "="*35 + "\n\n"
+        
+        if aristas_mst:
+            resultado += "Aristas del MST:\n"
+            for u, v, peso in aristas_mst:
+                resultado += f"  {u} -- {v} : {peso:.2f}\n"
+            
+            resultado += f"\nTotal de aristas: {len(aristas_mst)}\n"
+            resultado += f"Costo total: {costo_total:.2f}\n"
+            
+            nodos_conectados = set()
+            for u, v, _ in aristas_mst:
+                nodos_conectados.add(u)
+                nodos_conectados.add(v)
+            
+            if len(nodos_conectados) < len(self.grafo.grafo.nodes()):
+                resultado += "\n⚠ ADVERTENCIA: El grafo no es conexo\n"
+                resultado += f"Nodos conectados: {len(nodos_conectados)}/{len(self.grafo.grafo.nodes())}\n"
+        else:
+            resultado += "No se pudo construir el MST\n"
+            resultado += "(El grafo puede no ser conexo)\n"
+        
+        self.mostrar_mensaje(resultado)
+        self.actualizar_grafo()
+    
+    def mostrar_floyd_completo(self):
+        """Muestra la matriz completa de distancias de Floyd-Warshall."""
+        if len(self.grafo.grafo.nodes()) < 2:
+            messagebox.showwarning("Advertencia", "Se necesitan al menos 2 nodos")
+            return
+        
+        dist, pred = self.grafo.floyd_warshall()
+        nodos = list(self.grafo.grafo.nodes())
+        
+        resultado = "="*35 + "\n"
+        resultado += "  FLOYD-WARSHALL\n"
+        resultado += "  Matriz de Distancias Mínimas\n"
+        resultado += "="*35 + "\n\n"
+        
+        # Encabezado
+        max_len = max(len(str(n)) for n in nodos)
+        header = " " * (max_len + 2)
+        for n in nodos:
+            header += f"{str(n):>{max_len+1}}"
+        resultado += header + "\n"
+        resultado += "-" * len(header) + "\n"
+        
+        # Filas
+        for i in nodos:
+            row = f"{str(i):<{max_len}} |"
+            for j in nodos:
+                d = dist[i][j]
+                if d == float('inf'):
+                    row += f"{'∞':>{max_len+1}}"
+                else:
+                    row += f"{d:>{max_len+1}.0f}"
+            resultado += row + "\n"
+        
+        resultado += "\n" + "="*35 + "\n"
+        resultado += "Rutas más cortas desde cada nodo:\n"
+        resultado += "="*35 + "\n"
+        
+        # Mostrar algunas rutas ejemplo (solo las primeras para no saturar)
+        count = 0
+        for i in nodos:
+            for j in nodos:
+                if i != j and dist[i][j] != float('inf') and count < 10:
+                    camino = self.grafo.reconstruir_camino_floyd(pred, i, j)
+                    if camino:
+                        resultado += f"{i} → {j}: {' → '.join(camino)} ({dist[i][j]:.0f})\n"
+                        count += 1
+        
+        if count == 10:
+            resultado += "... (mostrando solo 10 rutas)\n"
+        
+        self.mostrar_mensaje(resultado)
+    
     def limpiar_grafo(self):
         if messagebox.askyesno("Confirmar", "Desea eliminar todo el grafo?"):
             self.grafo.limpiar()
             self.camino_actual = []
+            self.aristas_mst = []
             self.contador_nodos = 0
             self.cancelar_seleccion()
             self.mostrar_mensaje("Grafo limpiado")
@@ -785,6 +1048,7 @@ class AplicacionRutaMinima:
         
         self.contador_nodos = len(ciudades)
         self.camino_actual = []
+        self.aristas_mst = []
         self.cancelar_seleccion()
         
         mensaje = """🇨🇴 Mapa de Colombia Cargado
